@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speller Button</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            user-select: none;
+            -webkit-app-region: drag;
+        }
+
+        .floating-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #34D399 0%, #3B82F6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            margin: 8px;
+            -webkit-app-region: no-drag;
+        }
+
+        .floating-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-button" id="spellCheckButton">
+        <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 19.58l-5.5-5.5l1.41-1.41l4.09 4.09l6.09-6.09l1.41 1.41l-7.5 7.5zm0-13.58l-5.5 5.5l1.41 1.41l4.09-4.09l6.09 6.09l1.41-1.41l-7.5-7.5z" fill="white"/>
+        </svg>
+    </div>
+
+    <script>
+        document.getElementById('spellCheckButton').addEventListener('click', () => {
+            window.electron.ipcRenderer.send('floating-button-clicked');
+        });
+    </script>
+</body>
+</html> 

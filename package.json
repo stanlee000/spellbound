@@ -1,0 +1,126 @@
+{
+  "name": "spellbound",
+  "version": "1.0.0",
+  "description": "A smart grammar and spelling checker powered by OpenAI",
+  "main": "src/main.js",
+  "author": {
+    "name": "Stan Kharlap",
+    "email": "bond9555@gmail.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "webpack --watch & electron . --inspect",
+    "build": "webpack --mode production",
+    "webpack": "webpack --mode development --watch",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac --universal --publish always",
+    "dist:win": "electron-builder --win --publish always",
+    "dist:linux": "electron-builder --linux --publish always",
+    "test:build": "npm run build && npm run pack",
+    "test:dist:mac": "npm run build && npm run dist:mac",
+    "test:dist:win": "npm run build && npm run dist:win",
+    "test:dist:linux": "npm run build && npm run dist:linux",
+    "clean": "rm -rf dist/ && rm -rf build/"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "dotenv": "^16.0.3",
+    "electron-store": "^8.1.0",
+    "openai": "^4.0.0",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "stream-browserify": "^3.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/preset-env": "^7.26.9",
+    "@babel/preset-react": "^7.26.3",
+    "@mui/utils": "^7.0.2",
+    "babel-loader": "^9.2.1",
+    "css-loader": "^7.1.2",
+    "dmg-license": "^1.0.11",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.85.0",
+    "webpack-cli": "^5.1.1"
+  },
+  "build": {
+    "appId": "com.spellbound.app",
+    "productName": "Spellbound",
+    "copyright": "Copyright © 2025 Spellbound",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "src/assets/icon_512.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "sign": false,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "icon": "src/assets/icon_256.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "src/assets/icon_512.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "executableName": "spellbound",
+      "description": "A smart grammar and spelling checker powered by AI",
+      "maintainer": "Stan Kharlap <bond9555@gmail.com>"
+    },
+    "files": [
+      "**/*",
+      "src/assets/*"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "stanlee000",
+      "repo": "spellbound"
+    }
+  }
+}
