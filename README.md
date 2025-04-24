@@ -35,7 +35,7 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
 - **Custom keyboard shortcuts for your style**
 - **Multilingual & always ready—no limits**
 
-## <details><summary>👇 Experience Spellbound live — just toggle</summary><img src="https://github.com/user-attachments/assets/3b4085c8-829a-4038-8cce-7974930a9e05" alt="spellbound_suggestions"/><img src="https://github.com/user-attachments/assets/802290ff-5e00-47d0-bdb6-b1b989434c32" alt="spellbound_translations"/><img src="https://github.com/user-attachments/assets/0feb7354-f1e4-4418-b554-3f9041ed9c82" alt="spellbound_prompt_building"/><img src="https://github.com/user-attachments/assets/9f43fa56-2287-4acd-8d81-0929bbcf1fe6" alt="spellbound_enhance_text"/></details>
+## <details><summary>👇 Experience Spellbound — just toggle</summary><img src="https://github.com/user-attachments/assets/3b4085c8-829a-4038-8cce-7974930a9e05" alt="spellbound_suggestions"/><img src="https://github.com/user-attachments/assets/802290ff-5e00-47d0-bdb6-b1b989434c32" alt="spellbound_translations"/><img src="https://github.com/user-attachments/assets/0feb7354-f1e4-4418-b554-3f9041ed9c82" alt="spellbound_prompt_building"/><img src="https://github.com/user-attachments/assets/9f43fa56-2287-4acd-8d81-0929bbcf1fe6" alt="spellbound_enhance_text"/></details>
 
 
 ## 🚀 Getting Started
