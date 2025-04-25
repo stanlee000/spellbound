@@ -1,8 +1,8 @@
-# <img align="center" width="32px" src="https://github.com/user-attachments/assets/6518bc67-bfe5-484b-ad5f-ed8beca1f2e1"> Spellbound - Your AI-Powered Writing Assistant
-
-Spellbound is your AI writing assistant — just hit a shortcut for instant translations or writing tips to boost your workflow automation.
+# <div align="center"><img width="32px" src="https://github.com/user-attachments/assets/6518bc67-bfe5-484b-ad5f-ed8beca1f2e1"> Spellbound - your AI-powered writing assistant</div>
 
 <div align="center" style="border: 1px solid black; border-radius: 15px;">
+  <p>Just hit a shortcut for instant translations or writing tips to boost your workflow automation.</p>
+
   <kbd>
     <img width="600px" src="https://github.com/user-attachments/assets/011ca246-a538-46aa-9e10-30342822184b" alt="spellbound_screenhots_1"/>
   </kbd>
@@ -35,7 +35,29 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
 - **Custom keyboard shortcuts for your style**
 - **Multilingual & always ready—no limits**
 
-## <details><summary>👇 Experience Spellbound — just toggle</summary><img src="https://github.com/user-attachments/assets/3b4085c8-829a-4038-8cce-7974930a9e05" alt="spellbound_suggestions"/><img src="https://github.com/user-attachments/assets/802290ff-5e00-47d0-bdb6-b1b989434c32" alt="spellbound_translations"/><img src="https://github.com/user-attachments/assets/0feb7354-f1e4-4418-b554-3f9041ed9c82" alt="spellbound_prompt_building"/><img src="https://github.com/user-attachments/assets/9f43fa56-2287-4acd-8d81-0929bbcf1fe6" alt="spellbound_enhance_text"/></details>
+<details open><summary>
+  
+### 👇 Experience Spellbound — just toggle
+</summary>
+  <table>
+    <tr>
+      <td align="center">
+        <img src="https://github.com/user-attachments/assets/3b4085c8-829a-4038-8cce-7974930a9e05" alt="Spellbound suggestions showcase" width="450">
+      </td>
+      <td align="center">
+        <img src="https://github.com/user-attachments/assets/802290ff-5e00-47d0-bdb6-b1b989434c32" alt="Spellbound Translations showcase" width="450">
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="https://github.com/user-attachments/assets/0feb7354-f1e4-4418-b554-3f9041ed9c82" alt="Spellbound prompt building showcase" width="450">
+      </td>
+      <td align="center">
+        <img src="https://github.com/user-attachments/assets/9f43fa56-2287-4acd-8d81-0929bbcf1fe6" alt="Spellbound enhance text showcase" width="450">
+      </td>
+    </tr>
+  </table>
+</details>
 
 
 ## 🚀 Getting Started
@@ -60,12 +82,12 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
 
 ## 🛠 Technical Details
 
-### System Requirements
+#### System Requirements
 - **OS**: macOS 10.13+, Windows 10+, or Linux
 - **Storage**: 200MB free space
 - **Internet**: Required for API connectivity
 
-### Built With
+#### Built With
 - Electron
 - OpenAI API
 - React
@@ -88,11 +110,6 @@ We welcome contributions! Here's how you can help:
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 
 ## 🐛 Troubleshooting
 
@@ -133,7 +150,7 @@ Got a cool feature idea or something you’d like to see? [Drop your suggestion]
 ---
 
 <p align="center">
-Made with ❤️ by  <a href="https://github.com/stanlee000">@stanlee000</a>
+Made with ❤️
 </p>
 
 <p align="center">
