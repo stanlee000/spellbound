@@ -42,18 +42,18 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
   <table>
     <tr>
       <td align="center">
-        <img src="https://github.com/user-attachments/assets/3b4085c8-829a-4038-8cce-7974930a9e05" alt="Spellbound suggestions showcase" width="450">
+        <img src="https://github.com/user-attachments/assets/3b4085c8-829a-4038-8cce-7974930a9e05" alt="Spellbound suggestions showcase" width="350">
       </td>
       <td align="center">
-        <img src="https://github.com/user-attachments/assets/802290ff-5e00-47d0-bdb6-b1b989434c32" alt="Spellbound Translations showcase" width="450">
+        <img src="https://github.com/user-attachments/assets/802290ff-5e00-47d0-bdb6-b1b989434c32" alt="Spellbound Translations showcase" width="350">
       </td>
     </tr>
     <tr>
       <td align="center">
-        <img src="https://github.com/user-attachments/assets/0feb7354-f1e4-4418-b554-3f9041ed9c82" alt="Spellbound prompt building showcase" width="450">
+        <img src="https://github.com/user-attachments/assets/0feb7354-f1e4-4418-b554-3f9041ed9c82" alt="Spellbound prompt building showcase" width="350">
       </td>
       <td align="center">
-        <img src="https://github.com/user-attachments/assets/9f43fa56-2287-4acd-8d81-0929bbcf1fe6" alt="Spellbound enhance text showcase" width="450">
+        <img src="https://github.com/user-attachments/assets/9f43fa56-2287-4acd-8d81-0929bbcf1fe6" alt="Spellbound enhance text showcase" width="350">
       </td>
     </tr>
   </table>
