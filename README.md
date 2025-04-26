@@ -1,4 +1,4 @@
-# <div align="center"><img width="32px" src="https://github.com/user-attachments/assets/6518bc67-bfe5-484b-ad5f-ed8beca1f2e1"> Spellbound - your AI-powered writing assistant</div>
+# <div align="center"><img width="32px" src="https://github.com/user-attachments/assets/6518bc67-bfe5-484b-ad5f-ed8beca1f2e1"> Spellbound - your multilingual AI-powered writing assistant</div>
 
 <div align="center" style="border: 1px solid black; border-radius: 15px;">
   <p>Just hit a shortcut for instant translations or writing tips to boost your workflow automation.</p>
@@ -19,9 +19,9 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
 ## ✨ Features
 
 - **Instantly analyze text:** Press Hit ```Cmd+Shift+C (Mac) or Ctrl+Shift+C (Win/Linux)```
-- **Context magic:** App pops up right by your cursor
 - **Translate on the fly:** ```Cmd+Shift+T (Mac) / Ctrl+Shift+T (Win/Linux)```
-- **Language Detection**
+- **Context magic:** App pops up right by your cursor
+- **Multilingual & always ready—no limits**
 - **Enhance for any platform:**
   - 🐦 Twitter/X
   - 💼 LinkedIn
@@ -33,7 +33,7 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
 - **Cross-Platform:** Runs on Mac, Windows, and Linux
 - **Privacy-First:** Your API key never leaves your device
 - **Custom keyboard shortcuts for your style**
-- **Multilingual & always ready—no limits**
+- **Language Detection**
 
 <details open><summary>
   
@@ -135,7 +135,6 @@ We welcome contributions! Here's how you can help:
 Having issues? Check out our [Issues](../../issues) page or create a new issue.
 
 ## 🗺 What's Next?
-
 - **📱 Mobile App:** Take Spellbound anywhere, anytime!
 - **🌐 Browser Extension:** Magic on your favorite sites.
 - **🔄 Next-level Text Tools:** Select, edit, and enhance in a snap.
