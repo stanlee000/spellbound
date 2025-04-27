@@ -31,6 +31,7 @@
     "@mui/material": "^7.0.2",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
+    "diff": "^7.0.0",
     "dotenv": "^16.0.3",
     "electron-store": "^8.1.0",
     "openai": "^4.0.0",
@@ -69,11 +70,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ],
       "darkModeSupport": true
@@ -98,7 +105,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
