@@ -1,68 +1,109 @@
-const { app, ipcMain } = require('electron');
+const { app } = require('electron');
 const path = require('path');
 
-// Import services
+// Import our services and handlers
 const openaiService = require('./services/openai');
-const windowService = require('./services/window');
-const trayService = require('./services/tray');
-const shortcutsService = require('./services/shortcuts');
-
-// Import IPC handlers
-const apiHandlers = require('./ipc/handlers/api');
-const textHandlers = require('./ipc/handlers/text');
-const settingsHandlers = require('./ipc/handlers/settings');
-const clipboardHandlers = require('./ipc/handlers/clipboard');
+const settingsService = require('./services/settings');
+const shortcutService = require('./services/shortcut');
+const windowManager = require('./ui/window');
+const trayManager = require('./ui/tray');
+const ipcHandlers = require('./handlers/ipc');
+const textHandler = require('./handlers/text');
 
 console.log('Starting Spellbound app...');
 console.log('App path:', app.getAppPath());
 console.log('User data path:', app.getPath('userData'));
 
 // Initialize OpenAI client
-openaiService.initOpenAI();
+const initResult = openaiService.initOpenAI();
+console.log('OpenAI initialization result:', initResult);
 
-// Setup IPC handlers
-apiHandlers.setupApiHandlers(ipcMain);
-textHandlers.setupTextHandlers(ipcMain);
-settingsHandlers.setupSettingsHandlers(ipcMain);
-clipboardHandlers.setupClipboardHandlers(ipcMain);
+// Setup app event handlers
+function handleTranslationShortcut() {
+  console.log('Translation shortcut triggered');
+  
+  const mainWindow = windowManager.getMainWindow();
+  if (!mainWindow) return;
 
-// Handle window show request
-ipcMain.handle('show-window', () => {
-  windowService.showWindow();
-});
+  // Show window and position it near cursor
+  const position = shortcutService.getWindowPositionFromCursor();
+  windowManager.showWindowAtPosition(position);
 
-// Handle window minimization
-ipcMain.handle('minimize-window', () => {
-  windowService.hideWindow();
-});
+  if (!openaiService.openaiClient) {
+    console.log('No OpenAI client - prompting for API key');
+    mainWindow.webContents.send('show-settings');
+    return;
+  }
+  
+  // Get text from clipboard
+  const clipboardService = require('./services/clipboard');
+  const selection = clipboardService.getClipboardText().trim();
+  
+  // Always notify about the text status
+  if (!selection) {
+    console.log('No text in clipboard');
+    mainWindow.webContents.send('show-notification', 'Please select some text first');
+    return;
+  }
 
-// Common languages for translation
-ipcMain.handle('get-common-languages', () => {
-  return [
-    { code: 'en', name: 'English', native: 'English' },
-    { code: 'es', name: 'Spanish', native: 'Español' },
-    { code: 'zh', name: 'Chinese', native: '中文' },
-    { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
-    { code: 'ar', name: 'Arabic', native: 'العربية' },
-    { code: 'fr', name: 'French', native: 'Français' },
-    { code: 'ru', name: 'Russian', native: 'Русский' },
-    { code: 'pt', name: 'Portuguese', native: 'Português' },
-    { code: 'de', name: 'German', native: 'Deutsch' },
-    { code: 'pl', name: 'Polish', native: 'Polski' },
-    { code: 'it', name: 'Italian', native: 'Italiano' },
-    { code: 'ja', name: 'Japanese', native: '日本語' },
-  ];
-});
+  // Switch to translation tab and show language selector
+  mainWindow.webContents.send('set-active-tab', 2); // Index 2 for translation tab
+  mainWindow.webContents.send('show-language-selector');
+}
 
-// App lifecycle events
+function handleGrammarCheckShortcut() {
+  // Position the window near the cursor
+  const position = shortcutService.getWindowPositionFromCursor();
+  const mainWindow = windowManager.getMainWindow();
+  
+  if (mainWindow && !windowManager.isWindowFocused()) {
+    windowManager.showWindowAtPosition(position);
+  }
+  
+  // Check the text regardless of window visibility
+  textHandler.checkSelectedText(false);
+}
+
 app.whenReady().then(() => {
   console.log('App is ready, creating window...');
-  windowService.createWindow();
+  
+  // Create main window
+  windowManager.createWindow();
   console.log('Window created');
-  trayService.createTray();
+  
+  // Create tray
+  trayManager.createTray(() => app.quit());
   console.log('Tray created');
-  shortcutsService.registerLanguageShortcuts(windowService.getMainWindow());
+  
+  // Set up window events
+  windowManager.setupWindowEvents({
+    onBlur: () => {
+      const settings = settingsService.loadSettings();
+      if (settings.hasSeenInstructions) {
+        windowManager.hideWindow();
+      }
+    }
+  });
+  
+  // Set up shortcut callbacks
+  const shortcutCallbacks = {
+    grammarCheck: handleGrammarCheckShortcut,
+    translation: handleTranslationShortcut
+  };
+  
+  // Register shortcuts
+  shortcutService.registerShortcuts(shortcutCallbacks);
   console.log('Shortcuts registered');
+  
+  // Set up IPC handlers
+  ipcHandlers.setupIpcHandlers(textHandler.checkSelectedText);
+  console.log('IPC handlers registered');
+  
+  // Show window when clicking the dock icon (macOS)
+  app.on('activate', () => {
+    windowManager.showWindow();
+  });
+  
 }).catch(error => {
   console.error('Error during app startup:', error);
 });
@@ -74,12 +115,13 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (windowService.getMainWindow() === null) {
-    windowService.createWindow();
+  if (!windowManager.isWindowAvailable()) {
+    windowManager.createWindow();
   }
 });
 
 // Clean up on app quit
 app.on('will-quit', () => {
-  shortcutsService.unregisterLanguageShortcuts();
+  const { globalShortcut } = require('electron');
+  globalShortcut.unregisterAll();
 }); 

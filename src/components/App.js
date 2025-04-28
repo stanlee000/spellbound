@@ -901,23 +901,13 @@ const App = () => {
 
             {/* Language Info Banner */}
             {languageInfo && (
-              <Paper 
-                sx={{ 
-                  p: 2, 
-                  mb: 3, 
-                  backgroundColor: '#F8F9FA',
-                  border: '1px solid #EAEAEA',
-                  borderRadius: 2,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 2 
-                }}
-              >
-                <LanguageIcon sx={{ color: '#6B46C1' }} />
-                <Typography variant="body1" sx={{ color: '#1A1A1A', fontWeight: 500 }}>
-                  {languageInfo.name} ({languageInfo.native})
-                </Typography>
-              </Paper>
+
+              <Chip
+                icon={<LanguageIcon />}
+                label={`Detected Language: ${languageInfo.name}`}
+                color="primary"
+                sx={{ mb: 2 }}
+              />
             )}
 
             {activeTab === 0 ? (
@@ -973,14 +963,6 @@ const App = () => {
               // Enhance & Rewrite tab
               <Box>
                 <Box sx={{ mb: 3 }}>
-                  {detectedLanguage && (
-                    <Chip
-                      icon={<LanguageIcon />}
-                      label={`Detected Language: ${detectedLanguage.toUpperCase()}`}
-                      color="primary"
-                      sx={{ mb: 2 }}
-                    />
-                  )}
                   <Typography variant="body1" gutterBottom>
                     Select a preset or customize how you want to enhance your text:
                   </Typography>
