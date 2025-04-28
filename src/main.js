@@ -23,32 +23,32 @@ function handleTranslationShortcut() {
   console.log('Translation shortcut triggered');
   
   const mainWindow = windowManager.getMainWindow();
-  if (!mainWindow) return;
+    if (!mainWindow) return;
 
-  // Show window and position it near cursor
+    // Show window and position it near cursor
   const position = shortcutService.getWindowPositionFromCursor();
   windowManager.showWindowAtPosition(position);
 
   if (!openaiService.openaiClient) {
-    console.log('No OpenAI client - prompting for API key');
-    mainWindow.webContents.send('show-settings');
-    return;
-  }
-  
-  // Get text from clipboard
+      console.log('No OpenAI client - prompting for API key');
+      mainWindow.webContents.send('show-settings');
+      return;
+    }
+    
+    // Get text from clipboard
   const clipboardService = require('./services/clipboard');
   const selection = clipboardService.getClipboardText().trim();
-  
-  // Always notify about the text status
-  if (!selection) {
-    console.log('No text in clipboard');
-    mainWindow.webContents.send('show-notification', 'Please select some text first');
-    return;
-  }
+    
+    // Always notify about the text status
+    if (!selection) {
+      console.log('No text in clipboard');
+      mainWindow.webContents.send('show-notification', 'Please select some text first');
+      return;
+    }
 
-  // Switch to translation tab and show language selector
-  mainWindow.webContents.send('set-active-tab', 2); // Index 2 for translation tab
-  mainWindow.webContents.send('show-language-selector');
+    // Switch to translation tab and show language selector
+    mainWindow.webContents.send('set-active-tab', 2); // Index 2 for translation tab
+    mainWindow.webContents.send('show-language-selector');
 }
 
 function handleGrammarCheckShortcut() {
@@ -124,4 +124,4 @@ app.on('activate', () => {
 app.on('will-quit', () => {
   const { globalShortcut } = require('electron');
   globalShortcut.unregisterAll();
-}); 
+});
