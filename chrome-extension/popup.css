@@ -154,7 +154,7 @@ body {
 }
 
 .result-text.translate-result {
-  white-space: normal;
+  white-space: pre-line;
 }
 
 .result-footer {
