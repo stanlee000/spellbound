@@ -1,0 +1,78 @@
+{
+  "manifest_version": 3,
+  "name": "Spellbound: AI Writing Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered multilingual assistant—instantly translate, fix grammar, or enhance text to supercharge your workflow",
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "clipboardRead",
+    "clipboardWrite",
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "128": "icons/icon128.png"
+      }  
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "css": ["contentScript.css"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+O",
+        "mac": "Command+Shift+O"
+      },
+      "description": "Open Spellbound popup"
+    },
+    "check_grammar": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+G",
+        "mac": "Command+Shift+G"
+      },
+      "description": "Check Grammar & Style"
+    },
+    "enhance_text": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "Command+Shift+E"
+      },
+      "description": "Enhance & Rewrite"
+    },
+    "translate_text": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+T",
+        "mac": "Command+Shift+T"
+      },
+      "description": "Translate"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/icon16.png",
+        "icons/icon32.png", 
+        "icons/icon128.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
