@@ -2,7 +2,7 @@
 
 <div align="center" style="border: 1px solid black; border-radius: 15px;">
   <p>Just hit a shortcut for instant translations, grammar fixes, or text enhancements to supercharge your workflow.</p>
-
+     <p> <strong>AI writing power, everywhere you type</strong></p>
   <kbd>
     <img width="600px" src="https://github.com/user-attachments/assets/011ca246-a538-46aa-9e10-30342822184b" alt="spellbound_screenhots_1"/>
   </kbd>
