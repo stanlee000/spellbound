@@ -30,7 +30,7 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
   - 🎯 Reddit
   - 🪄 AI prompts builder
   - ✍️ Custom tones  
-- **Cross-Platform:** Runs on Mac, Windows, and Linux
+- **Cross-Platform:** Runs on Mac, Windows, and Linux. For Google Chrome extension check it our [here](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
 - **Privacy-First:** Your API key never leaves your device
 - **Custom keyboard shortcuts for your style**
 - **Language Detection**
@@ -136,7 +136,7 @@ Having issues? Check out our [Issues](../../issues) page or create a new issue.
 
 ## 🗺 What's Next?
 - **📱 Mobile App:** Take Spellbound anywhere, anytime!
-- **🌐 Browser Extension:** Magic on your favorite sites.
+- **🌐 Browser Extension:** Magic on your favorite sites. [Google Chrome extension](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
 - **🔄 Next-level Text Tools:** Select, edit, and enhance in a snap.
 - **🎯 Smart Templates:** Save and reuse go-to prompts.
 - **🎤 Voice Input:** Speak, create, and wow in real time.
