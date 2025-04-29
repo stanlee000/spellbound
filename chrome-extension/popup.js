@@ -21,6 +21,7 @@ let currentCorrections = []; // Store grammar corrections
 let revertedCorrectionIds = new Set(); // Track reverted corrections
 let grammarCache = {}; // Cache for grammar results { originalText: jsonResult }
 let translationCache = {}; // Cache for translation results { "originalText_langCode": jsonResult }
+let currentLanguageInfo = null; // Store detected language info
 
 // Common languages for translation
 const commonLanguages = [
@@ -549,6 +550,7 @@ function safeJsonParse(jsonString) {
 function createFallbackResponse(text) {
   if (activeTab === 'grammar') {
     return {
+      languageInfo: null, // Add null languageInfo
       correctedText: text,
       corrections: [],
       languageSpecific: []
@@ -562,6 +564,20 @@ function createFallbackResponse(text) {
   return null;
 }
 
+// Function to display detected language
+function displayLanguageInfo(langInfo) {
+  const langInfoBox = document.getElementById('detected-language-info');
+  const langNameElement = document.getElementById('detected-language-name');
+  if (langInfoBox && langNameElement && langInfo && langInfo.name) {
+    langNameElement.textContent = langInfo.name;
+    langInfoBox.classList.remove('hidden');
+    currentLanguageInfo = langInfo; // Store globally for potential later use
+  } else if (langInfoBox) {
+    langInfoBox.classList.add('hidden'); // Hide if no info
+    currentLanguageInfo = null;
+  }
+}
+
 // Check grammar
 async function checkGrammar() {
   if (!originalText || !openaiApiKey) return;
@@ -572,19 +588,24 @@ async function checkGrammar() {
   // Reset correction state
   currentCorrections = [];
   revertedCorrectionIds.clear();
+  // Hide language info initially
+  displayLanguageInfo(null); 
   
   // --- Caching Logic --- 
   if (grammarCache[originalText]) {
     console.log('Using cached grammar result for:', originalText.substring(0, 30) + '...');
     const jsonResult = grammarCache[originalText];
-    // Process cached result (skip API call)
     try {
+        // Display language info from cache
+        displayLanguageInfo(jsonResult.languageInfo); 
+        
         currentCorrections = (jsonResult.corrections && Array.isArray(jsonResult.corrections)) ? jsonResult.corrections : [];
         const highlightedText = highlightCorrections(jsonResult.correctedText, currentCorrections);
         resultTextElement.innerHTML = highlightedText;
         setupCorrectionHandlers();
+        
+        // Display language specific suggestions from cache
         if (jsonResult.languageSpecific && jsonResult.languageSpecific.length > 0) {
-           // Display language specific suggestions from cache
            const languageSpecificElement = document.getElementById('language-specific');
            const listElement = document.getElementById('language-specific-list');
            listElement.innerHTML = '';
@@ -603,6 +624,9 @@ async function checkGrammar() {
     } catch (error) {
       console.error('Error processing cached grammar result:', error);
       resultTextElement.textContent = 'Error displaying cached result.';
+    } finally {
+       document.getElementById('grammar-result').classList.remove('hidden'); // Ensure result container is visible even on error
+       loadingElement.classList.add('hidden');
     }
     return; // Exit function after using cache
   }
@@ -615,19 +639,21 @@ async function checkGrammar() {
   resultTextElement.innerHTML = ''; // Clear previous result
   document.getElementById('language-specific').classList.add('hidden'); // Hide language specific section
   
-  // Create prompt for grammar check - Aligned with openai.js structure + correctedText
+  // Create prompt for grammar check - Aligned with openai.js structure + correctedText + languageInfo
   const systemPrompt = `
     You are a professional proofreader.
-    Identify spelling, grammar, and style issues in the provided text. Also take into account the context of the text and tone.
+    First, detect the language of the provided text.
+    Then, identify spelling, grammar, and style issues based on that language. Also take into account the context of the text and tone.
     Return a JSON object with the following structure:
     {
+      "languageInfo": { "code": "ISO code", "name": "English Name", "native": "Native Name" },
       "correctedText": "The full corrected text, incorporating all suggestions",
       "corrections": [
         { "original": "incorrect segment", "corrected": "suggested correction", "explanation": "brief explanation" }
       ],
-      "languageSpecific": ["any language-specific improvement suggestions"]
+      "languageSpecific": ["any language-specific improvement suggestions related to the detected language"]
     }
-    If no corrections are needed, return the original text in correctedText and empty arrays for corrections and languageSpecific.
+    If no corrections are needed, return the original text in correctedText and empty arrays for corrections and languageSpecific, but still include the languageInfo.
     IMPORTANT: Return ONLY the raw JSON without any markdown formatting, code blocks, or additional text.
   `;
   const userPrompt = originalText;
@@ -642,7 +668,9 @@ async function checkGrammar() {
     try {
       const jsonResult = safeJsonParse(result);
       
-      if (!jsonResult || !jsonResult.correctedText) {
+      // Check for essential fields (correctedText is primary)
+      if (!jsonResult || typeof jsonResult.correctedText === 'undefined') { 
+        console.error('Invalid grammar check result structure:', jsonResult);
         resultTextElement.textContent = 'Error processing grammar check result.';
         return;
       }
@@ -651,12 +679,16 @@ async function checkGrammar() {
       grammarCache[originalText] = jsonResult;
       console.log('Cached new grammar result.');
 
+      // Display language info
+      displayLanguageInfo(jsonResult.languageInfo);
+
       // Process new result
       currentCorrections = (jsonResult.corrections && Array.isArray(jsonResult.corrections)) ? jsonResult.corrections : [];
       const highlightedText = highlightCorrections(jsonResult.correctedText, currentCorrections);
       resultTextElement.innerHTML = highlightedText;
       setupCorrectionHandlers(); 
       
+      // Display language specific suggestions
       if (jsonResult.languageSpecific && jsonResult.languageSpecific.length > 0) {
         const languageSpecificElement = document.getElementById('language-specific');
         const listElement = document.getElementById('language-specific-list');
@@ -675,9 +707,15 @@ async function checkGrammar() {
     } catch (error) {
       console.error('Error processing new grammar result:', error);
       resultTextElement.textContent = 'Error processing grammar check result.';
+    } finally {
+      // Ensure result container is visible even on error, loading hidden
+      document.getElementById('grammar-result').classList.remove('hidden');
+      loadingElement.classList.add('hidden');
     }
   } else {
     resultTextElement.textContent = 'Failed to check grammar. Please try again.';
+    document.getElementById('grammar-result').classList.remove('hidden'); // Show container with error
+    loadingElement.classList.add('hidden');
   }
 }
 

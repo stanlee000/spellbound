@@ -665,4 +665,29 @@ body {
 .guidance-box strong {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+/* Detected Language Info Box */
+.language-info-box {
+  background-color: var(--background-light); /* Subtle background */
+  border: 1px solid var(--border-color);
+  border-radius: 16px; /* Pill shape */
+  padding: 6px 12px;
+  margin-bottom: 12px; /* Space below */
+  display: inline-flex; /* Make it wrap content */
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  box-shadow: none; /* Less prominent than results */
+}
+
+.language-info-box .material-icons {
+  color: var(--text-secondary);
+  font-size: 18px;
+}
+
+.language-info-box strong {
+  color: var(--text-primary);
+  font-weight: 500;
 } 

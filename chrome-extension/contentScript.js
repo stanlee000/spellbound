@@ -290,8 +290,13 @@ function showFloatingMenu() {
           }
         }, 200);
       } catch (error) {
-        console.error('Error in chrome.storage callback:', error);
-        selectedText = ''; // Clear on error
+        // Check for context invalidated error here too
+        if (error.message && error.message.includes('Extension context invalidated')) {
+            console.warn('Context invalidated during storage callback, likely popup closed.');
+        } else {
+            console.error('Error in chrome.storage callback:', error);
+        }
+        selectedText = ''; // Clear on error regardless
       }
     });
   } catch (error) {
