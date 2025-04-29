@@ -29,6 +29,7 @@ const commonLanguages = [
   { code: 'es', name: 'Spanish', native: 'Español' },
   { code: 'fr', name: 'French', native: 'Français' },
   { code: 'de', name: 'German', native: 'Deutsch' },
+  { code: 'pl', name: 'Polish', native: 'Polski' },
   { code: 'it', name: 'Italian', native: 'Italiano' },
   { code: 'pt', name: 'Portuguese', native: 'Português' },
   { code: 'ru', name: 'Russian', native: 'Русский' },
