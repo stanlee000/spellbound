@@ -4,7 +4,7 @@ let selectedPreset = null;
 let originalText = '';
 let selectedTargetLang = null;
 let openaiApiKey = '';
-let selectedModel = 'gpt-3.5-turbo';
+let selectedModel = 'gpt-4o';
 let defaultTranslationLanguage = '';
 let contextValues = {
   twitter: '',
@@ -19,9 +19,12 @@ let contextValues = {
 };
 let currentCorrections = []; // Store grammar corrections
 let revertedCorrectionIds = new Set(); // Track reverted corrections
+let grammarCache = {}; // Cache for grammar results { originalText: jsonResult }
+let translationCache = {}; // Cache for translation results { "originalText_langCode": jsonResult }
 
 // Common languages for translation
 const commonLanguages = [
+  { code: 'en', name: 'English', native: 'English' },
   { code: 'es', name: 'Spanish', native: 'Español' },
   { code: 'fr', name: 'French', native: 'Français' },
   { code: 'de', name: 'German', native: 'Deutsch' },
@@ -77,9 +80,9 @@ function checkApiKey() {
     if (response && response.hasApiKey) {
       openaiApiKey = response.apiKey;
       
-      // Load settings if available
+      // Load settings if available, default model to gpt-4o
       if (response.settings) {
-        selectedModel = response.settings.selectedModel || 'gpt-3.5-turbo';
+        selectedModel = response.settings.selectedModel || 'gpt-4o';
       }
       
       document.getElementById('api-key-setup').classList.add('hidden');
@@ -150,28 +153,99 @@ function setupTabNavigation() {
   document.getElementById(`${activeTab}-tab`).classList.remove('hidden');
 }
 
+// Function to fetch available GPT-4 models from OpenAI
+async function fetchAvailableModels() {
+  if (!openaiApiKey) {
+    console.warn('Cannot fetch models without API key.');
+    return null;
+  }
+  
+  try {
+    const response = await fetch('https://api.openai.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`OpenAI API responded with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    // Filter for models containing 'gpt-4' and sort them (optional)
+    const gpt4Models = data.data
+      .filter(model => model.id.includes('gpt-4'))
+      .sort((a, b) => a.id.localeCompare(b.id)); // Sort alphabetically
+      
+    console.log('Fetched GPT-4 models:', gpt4Models);
+    return gpt4Models;
+  } catch (error) {
+    console.error('Error fetching OpenAI models:', error);
+    showNotification('Could not fetch models from OpenAI. Using defaults.', 'error');
+    return null; // Return null on error
+  }
+}
+
+// Populate model selector dropdown
+function populateModelSelector(models) {
+  const modelSelector = document.getElementById('modelSelector');
+  if (!modelSelector) return;
+  
+  // Clear existing options except maybe a placeholder
+  modelSelector.innerHTML = '<option value="" disabled>Select a model...</option>'; 
+
+  // Default list in case fetching fails or returns nothing
+  const defaultModels = [
+    { id: 'gpt-4o', name: 'GPT-4o (Default)' },
+    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+    // Add other common fallbacks if needed
+  ];
+
+  const modelsToUse = models && models.length > 0 ? models : defaultModels;
+
+  modelsToUse.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.id;
+    // Use provided name or format the ID if name isn't available
+    option.textContent = model.name || model.id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); 
+    modelSelector.appendChild(option);
+  });
+  
+  // Set the current selection
+  modelSelector.value = selectedModel;
+  // Ensure the default 'gpt-4o' is selected if the saved model isn't in the list
+  if (!modelSelector.value && modelsToUse.some(m => m.id === 'gpt-4o')) {
+      modelSelector.value = 'gpt-4o';
+      selectedModel = 'gpt-4o'; // Update the global variable too
+  }
+}
+
 // Setup settings dialog
 function setupSettingsDialog() {
   const settingsButton = document.getElementById('settingsButton');
   const settingsDialog = document.getElementById('settings-dialog');
-  const closeDialog = document.querySelector('.close-dialog');
+  const closeButtons = document.querySelectorAll('.close-dialog'); // Select ALL close buttons (icon + Cancel button)
   const updateSettingsButton = document.getElementById('updateSettings');
   const modelSelector = document.getElementById('modelSelector');
   const defaultLangSelector = document.getElementById('defaultLanguageSelector');
   
-  // Add scrollable style to dialog content
-  const dialogContent = document.querySelector('.dialog-content');
+  const dialogContent = settingsDialog.querySelector('.dialog-content'); // Scope querySelector to dialog
   if (dialogContent) {
     dialogContent.style.maxHeight = '80vh';
     dialogContent.style.overflowY = 'auto';
   }
   
-  settingsButton.addEventListener('click', () => {
-    // Populate the API key field and model selector
+  settingsButton.addEventListener('click', async () => { // Make async
+    // Populate the API key field
     document.getElementById('apiKeySettings').value = openaiApiKey;
     
-    // Set the current model
-    modelSelector.value = selectedModel;
+    // Show loading state in model selector
+    modelSelector.innerHTML = '<option value="" disabled selected>Loading models...</option>';
+    
+    // Fetch models and populate selector
+    const availableModels = await fetchAvailableModels();
+    populateModelSelector(availableModels); // Pass fetched models
     
     // Load default translation language setting
     chrome.storage.local.get(['defaultTranslationLanguage'], (result) => {
@@ -184,8 +258,11 @@ function setupSettingsDialog() {
     settingsDialog.classList.remove('hidden');
   });
   
-  closeDialog.addEventListener('click', () => {
-    settingsDialog.classList.add('hidden');
+  // Add listener to all elements intended to close the dialog
+  closeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      settingsDialog.classList.add('hidden');
+    });
   });
   
   updateSettingsButton.addEventListener('click', () => {
@@ -298,8 +375,11 @@ function setupPresetSelection() {
 // Load initial text from selection
 function loadInitialText() {
   chrome.storage.local.get(['selectedText', 'activeTab'], (result) => {
+    const guidanceBox = document.getElementById('no-text-info');
+    
     if (result.selectedText) {
       originalText = result.selectedText;
+      guidanceBox?.classList.add('hidden'); // Hide guidance if text exists
       
       // Set active tab based on context menu selection
       if (result.activeTab) {
@@ -309,55 +389,92 @@ function loadInitialText() {
         }
       }
       
-      // Process the text immediately after loading, regardless of tab selection
+      // Process the text immediately after loading
       setTimeout(() => {
         processActiveTab();
       }, 100);
+    } else {
+      // No text selected, show guidance only if on grammar tab initially
+      originalText = ''; 
+      if (activeTab === 'grammar') {
+          guidanceBox?.classList.remove('hidden'); 
+      }
     }
   });
 }
 
 // Process text based on the active tab
 function processActiveTab() {
-  if (!originalText) return;
+  const guidanceBox = document.getElementById('no-text-info');
+  
+  // Always hide guidance box when processing text
+  guidanceBox?.classList.add('hidden');
+  
+  if (!originalText) {
+      // If called without text (e.g., tab switch before load), show guidance on grammar tab
+      if (activeTab === 'grammar') {
+          guidanceBox?.classList.remove('hidden');
+      }
+      return; 
+  }
   
   switch (activeTab) {
     case 'grammar':
       checkGrammar();
       break;
     case 'enhance':
+      // Enhance only triggers on button click now
+      // Maybe select the first preset visually if none is selected?
       if (!selectedPreset) {
-        // Auto-select the first preset if none is selected
         const firstPresetCard = document.querySelector('.preset-card');
         if (firstPresetCard) {
-          firstPresetCard.click();
-        } else {
-          enhanceText();
+            // Don't add 'selected' class automatically, wait for user click
+            // firstPresetCard.classList.add('selected'); 
+            // selectedPreset = firstPresetCard.getAttribute('data-preset');
         }
-      } else {
-        enhanceText();
-      }
+      } 
+      // Clear previous enhance result if text changed?
+      // document.getElementById('enhance-result').classList.add('hidden');
       break;
     case 'translate':
+      console.log('Activating translate tab, populating chips...');
       populateLanguageChips();
-      // Auto-select Spanish as default if no language is selected
-      setTimeout(() => {
-        if (!selectedTargetLang) {
-          const firstLangChip = document.querySelector('.language-chip');
-          if (firstLangChip) {
-            firstLangChip.click();
-          }
-        }
-      }, 100);
+      // DO NOT automatically translate here. 
+      // populateLanguageChips handles clicking the default chip if set.
+      // Translation only happens when a chip is clicked (manually or automatically by default setting).
       break;
   }
 }
 
 // API calls to OpenAI
-async function callOpenAI(prompt, model = null) {
+async function callOpenAI(userPrompt, model = null, systemPrompt = null, expectJson = false) {
   // Use the selected model or the provided one
   const modelToUse = model || selectedModel;
   
+  // Construct messages array
+  const messages = [];
+  if (systemPrompt) {
+    messages.push({ role: 'system', content: systemPrompt });
+  } else {
+    // Default system prompt if none provided
+    messages.push({ role: 'system', content: 'You are a helpful assistant.' }); // Simpler default
+  }
+  messages.push({ role: 'user', content: userPrompt });
+
+  // Construct payload
+  const payload = {
+      model: modelToUse,
+      messages: messages,
+      temperature: 0.7 // Adjust temperature per function if needed later
+  };
+
+  // Add response_format if JSON is expected
+  if (expectJson) {
+      payload.response_format = { type: "json_object" };
+      // Lower temperature might help consistency for JSON
+      payload.temperature = 0.3; 
+  }
+
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -365,18 +482,12 @@ async function callOpenAI(prompt, model = null) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openaiApiKey}`
       },
-      body: JSON.stringify({
-        model: modelToUse,
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant. Always respond with valid JSON when asked for JSON format.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7
-      })
+      body: JSON.stringify(payload) // Use the constructed payload
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json().catch(() => ({})); // Try to get error details
+      console.error('OpenAI API Error Data:', errorData);
       throw new Error(
         errorData.error?.message || 
         `OpenAI API responded with status ${response.status}`
@@ -385,6 +496,7 @@ async function callOpenAI(prompt, model = null) {
     
     const data = await response.json();
     return data.choices[0].message.content;
+
   } catch (error) {
     console.error('Error calling OpenAI:', error);
     showNotification('Error calling OpenAI: ' + error.message, 'error');
@@ -461,28 +573,67 @@ async function checkGrammar() {
   currentCorrections = [];
   revertedCorrectionIds.clear();
   
+  // --- Caching Logic --- 
+  if (grammarCache[originalText]) {
+    console.log('Using cached grammar result for:', originalText.substring(0, 30) + '...');
+    const jsonResult = grammarCache[originalText];
+    // Process cached result (skip API call)
+    try {
+        currentCorrections = (jsonResult.corrections && Array.isArray(jsonResult.corrections)) ? jsonResult.corrections : [];
+        const highlightedText = highlightCorrections(jsonResult.correctedText, currentCorrections);
+        resultTextElement.innerHTML = highlightedText;
+        setupCorrectionHandlers();
+        if (jsonResult.languageSpecific && jsonResult.languageSpecific.length > 0) {
+           // Display language specific suggestions from cache
+           const languageSpecificElement = document.getElementById('language-specific');
+           const listElement = document.getElementById('language-specific-list');
+           listElement.innerHTML = '';
+           jsonResult.languageSpecific.forEach(suggestion => {
+             const li = document.createElement('li');
+             li.innerHTML = `<span class="material-icons">info</span>${escapeHtml(suggestion)}`; 
+             listElement.appendChild(li);
+           });
+           languageSpecificElement.classList.remove('hidden');
+        } else {
+             document.getElementById('language-specific').classList.add('hidden');
+        }
+        setupGrammarCopyHandler(jsonResult.correctedText);
+        document.getElementById('grammar-result').classList.remove('hidden');
+        loadingElement.classList.add('hidden'); // Ensure loading is hidden
+    } catch (error) {
+      console.error('Error processing cached grammar result:', error);
+      resultTextElement.textContent = 'Error displaying cached result.';
+    }
+    return; // Exit function after using cache
+  }
+  // --- End Caching Logic ---
+  
+  console.log('No cache hit, fetching grammar result...');
   // Show loading indicator
   loadingElement.classList.remove('hidden');
   document.getElementById('grammar-result').classList.remove('hidden');
-  resultTextElement.innerHTML = '';
+  resultTextElement.innerHTML = ''; // Clear previous result
+  document.getElementById('language-specific').classList.add('hidden'); // Hide language specific section
   
-  // Create prompt for grammar check
-  const prompt = `
-    Please check the following text for grammar, spelling, and style errors. 
-    Format your response as a JSON object with the following structure:
+  // Create prompt for grammar check - Aligned with openai.js structure + correctedText
+  const systemPrompt = `
+    You are a professional proofreader.
+    Identify spelling, grammar, and style issues in the provided text. Also take into account the context of the text and tone.
+    Return a JSON object with the following structure:
     {
-      "correctedText": "The full corrected text",
+      "correctedText": "The full corrected text, incorporating all suggestions",
       "corrections": [
-        { "original": "incorrect text", "corrected": "correct text", "explanation": "brief explanation" }
+        { "original": "incorrect segment", "corrected": "suggested correction", "explanation": "brief explanation" }
       ],
-      "languageSpecific": ["any language-specific suggestions"]
+      "languageSpecific": ["any language-specific improvement suggestions"]
     }
-    
-    Text to check:
-    ${originalText}
+    If no corrections are needed, return the original text in correctedText and empty arrays for corrections and languageSpecific.
+    IMPORTANT: Return ONLY the raw JSON without any markdown formatting, code blocks, or additional text.
   `;
+  const userPrompt = originalText;
   
-  const result = await callOpenAI(prompt);
+  // Pass expectJson = true
+  const result = await callOpenAI(userPrompt, null, systemPrompt, true); 
   
   // Hide loading indicator
   loadingElement.classList.add('hidden');
@@ -491,40 +642,38 @@ async function checkGrammar() {
     try {
       const jsonResult = safeJsonParse(result);
       
-      if (!jsonResult || !jsonResult.correctedText) { // Check for correctedText too
+      if (!jsonResult || !jsonResult.correctedText) {
         resultTextElement.textContent = 'Error processing grammar check result.';
         return;
       }
       
-      // Store corrections and ensure it's an array
+      // Store successful result in cache
+      grammarCache[originalText] = jsonResult;
+      console.log('Cached new grammar result.');
+
+      // Process new result
       currentCorrections = (jsonResult.corrections && Array.isArray(jsonResult.corrections)) ? jsonResult.corrections : [];
-      
-      // Highlight corrections in the text
       const highlightedText = highlightCorrections(jsonResult.correctedText, currentCorrections);
       resultTextElement.innerHTML = highlightedText;
+      setupCorrectionHandlers(); 
       
-      // Setup click handlers for corrections
-      setupCorrectionHandlers();
-      
-      // Show language-specific suggestions if any
       if (jsonResult.languageSpecific && jsonResult.languageSpecific.length > 0) {
         const languageSpecificElement = document.getElementById('language-specific');
         const listElement = document.getElementById('language-specific-list');
-        
         listElement.innerHTML = '';
         jsonResult.languageSpecific.forEach(suggestion => {
           const li = document.createElement('li');
-          li.textContent = suggestion;
-          listElement.appendChild(li);
+           li.innerHTML = `<span class="material-icons">info</span>${escapeHtml(suggestion)}`; 
+           listElement.appendChild(li);
         });
-        
         languageSpecificElement.classList.remove('hidden');
+      } else {
+         document.getElementById('language-specific').classList.add('hidden');
       }
-      
-      // Setup copy handler (will be modified later)
-      setupGrammarCopyHandler(jsonResult.correctedText); // Pass original corrected text
+      setupGrammarCopyHandler(jsonResult.correctedText);
+
     } catch (error) {
-      console.error('Error processing grammar check result:', error);
+      console.error('Error processing new grammar result:', error);
       resultTextElement.textContent = 'Error processing grammar check result.';
     }
   } else {
@@ -591,18 +740,20 @@ function escapeHtml(text) {
 }
 
 // Setup click handlers for corrections
-let grammarResultClickListener = null; // Keep track of listener
+let grammarResultClickListener = null; // Keep track of click listener
+let grammarResultMouseOverListener = null; // Keep track of mouseover listener
+let grammarResultMouseOutListener = null; // Keep track of mouseout listener
 
 function setupCorrectionHandlers() {
   const resultTextElement = document.querySelector('#grammar-result .result-text');
   if (!resultTextElement) return;
 
-  // Remove previous listener if it exists
+  // --- Click Listener (Toggle Reversion) --- 
+  // Remove previous click listener if it exists
   if (grammarResultClickListener) {
     resultTextElement.removeEventListener('click', grammarResultClickListener);
   }
-
-  // Define the new listener
+  // Define the new click listener
   grammarResultClickListener = (event) => {
     const target = event.target;
     const correctionSpan = target.closest('.correction');
@@ -611,19 +762,15 @@ function setupCorrectionHandlers() {
       event.stopPropagation(); // Prevent the copy-all listener
       
       const correctionId = parseInt(correctionSpan.getAttribute('data-correction-id'));
-      const explanation = correctionSpan.getAttribute('data-explanation');
       const originalText = correctionSpan.getAttribute('data-original');
-      const correctedText = correctionSpan.textContent;
-
-      // Show explanation
-      showNotification(`${explanation}\n(Original: "${originalText}")`, 'info');
+      const correctedText = currentCorrections[correctionId]?.corrected || correctionSpan.textContent; // Get full corrected text
 
       // Toggle reverted state
       if (revertedCorrectionIds.has(correctionId)) {
         // Re-apply correction
         revertedCorrectionIds.delete(correctionId);
         correctionSpan.classList.remove('reverted');
-        correctionSpan.textContent = currentCorrections[correctionId]?.corrected || correctedText; // Restore corrected text
+        correctionSpan.textContent = correctedText; // Restore corrected text
         correctionSpan.setAttribute('title', `Click to revert to: ${originalText}`);
       } else {
         // Revert correction
@@ -634,9 +781,50 @@ function setupCorrectionHandlers() {
       }
     }
   };
-
-  // Attach the new listener
+  // Attach the new click listener
   resultTextElement.addEventListener('click', grammarResultClickListener);
+
+  // --- MouseOver Listener (Show Explanation) ---
+  if (grammarResultMouseOverListener) {
+    resultTextElement.removeEventListener('mouseover', grammarResultMouseOverListener);
+  }
+  grammarResultMouseOverListener = (event) => {
+    const target = event.target;
+    const correctionSpan = target.closest('.correction');
+    if (correctionSpan) {
+      const explanation = correctionSpan.getAttribute('data-explanation');
+      const originalText = correctionSpan.getAttribute('data-original');
+      const message = explanation 
+                      ? `${explanation}\n(Original: \"${originalText}\")` 
+                      : `Original: \"${originalText}\"`;
+      // Show notification with duration 0 AND pass the event for positioning
+      showNotification(message, 'info', 0, event); 
+    }
+  };
+  resultTextElement.addEventListener('mouseover', grammarResultMouseOverListener);
+
+  // --- MouseOut Listener (Hide Explanation) ---
+  if (grammarResultMouseOutListener) {
+    resultTextElement.removeEventListener('mouseout', grammarResultMouseOutListener);
+  }
+  grammarResultMouseOutListener = (event) => {
+    const target = event.target;
+    // Check if the mouse is leaving a correction span specifically
+    if (target.classList.contains('correction')) { 
+        const notificationElement = document.getElementById('notification');
+        if (notificationElement && notificationElement.classList.contains('show')) {
+          // Immediately remove the 'show' class to hide it
+          notificationElement.classList.remove('show');
+          // Clear any potential lingering timeout (though duration=0 should prevent this)
+          const existingTimeoutId = notificationElement.dataset.timeoutId;
+          if (existingTimeoutId) {
+            clearTimeout(parseInt(existingTimeoutId));
+            notificationElement.removeAttribute('data-timeout-id');
+          }
+        }
+      }
+  };
+  resultTextElement.addEventListener('mouseout', grammarResultMouseOutListener);
 }
 
 // Setup handler for copying grammar result
@@ -703,67 +891,75 @@ async function enhanceText() {
   const resultTextElement = document.querySelector('#enhance-result .result-text');
   const resultContainer = document.getElementById('enhance-result');
   
-  // Show loading indicator
+  // Show loading indicator and the container
   loadingElement.classList.remove('hidden');
   resultContainer.classList.remove('hidden');
-  resultTextElement.innerHTML = '';
+  resultTextElement.innerHTML = ''; // Clear previous result
+
+  // Optionally scroll the container into view when loading starts
+  // resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   
-  // Get context values based on selected preset
+  // Determine tone and context based on preset (as before)
   let context = '';
-  let tone = '';
+  let toneInstruction = ''; // Store the specific rewrite instruction
   
   switch (selectedPreset) {
     case 'twitter':
       context = contextValues.twitter || '';
-      tone = 'concise, engaging, and optimized for social media with appropriate hashtags';
+      toneInstruction = `Rewrite this text as an engaging X (Twitter) post. Make it concise, impactful. You can divide the text into multiple posts if need to engage the audience (each post should be 280 characters or less). ${context ? `Additional context: ${context}.` : ''}`;
       break;
     case 'linkedin':
       context = contextValues.linkedin || '';
-      tone = 'professional, insightful, and appropriate for a business networking platform';
+      toneInstruction = `Rewrite this text as a professional LinkedIn post. Focus on business value, insights, and professional tone. Add relevant hashtags. ${context ? `Additional context: ${context}.` : ''}`;
       break;
     case 'instagram':
       context = contextValues.instagram || '';
-      tone = 'authentic, engaging, suitable for Instagram captions';
+       toneInstruction = `Rewrite this text as an engaging Instagram post. Make it relatable, authentic, and add relevant hashtags. ${context ? `Additional context: ${context}.` : ''}`;
       break;
     case 'hackernews':
-      context = contextValues.hackernews || '';
-      tone = 'analytical, technically accurate, objective, suitable for Hacker News discussion';
+       context = contextValues.hackernews || '';
+       toneInstruction = `Rewrite this text in a style suitable for Hacker News. Focus on technical accuracy, intellectual depth, and objective analysis. ${context ? `Additional context: ${context}.` : ''}`;
       break;
     case 'reddit':
       context = contextValues.reddit || '';
-      tone = 'conversational, clear, well-structured, suitable for Reddit comments/posts';
-      break;  
+       toneInstruction = `Rewrite this text as a Reddit post. Make it informative yet conversational, with good formatting. ${context ? `Additional context: ${context}.` : ''}`;
+      break;
     case 'promptBuilder':
       context = contextValues.promptBuilder || '';
-      tone = 'structured as a clear, effective LLM prompt, following best practices';
+      toneInstruction = `Transform this text into a well-structured LLM prompt following best practices:
+        1. Be specific and clear about the desired outcome
+        2. Break down complex tasks into steps
+        3. Include relevant context and constraints
+        4. Specify the format of the expected response
+        5. Use examples if helpful
+        ${context ? `Additional context to consider: ${context}.` : ''}`;
       break;
     case 'academic':
       context = contextValues.academic || '';
-      tone = 'formal, scholarly, and well-structured with appropriate terminology';
+      toneInstruction = `Rewrite this text in a formal, scholarly, and well-structured tone with appropriate terminology. ${context ? `Additional context: ${context}.` : ''}`;
       break;
     case 'custom':
       context = contextValues.customContext || '';
-      tone = contextValues.customTone || 'clear and well-written';
+      toneInstruction = `Rewrite this text with the following tone: ${contextValues.customTone || 'clear and well-written'}. ${context ? `Additional context: ${context}.` : ''}`;
       break;
     default:
-        console.error('Unknown selected preset:', selectedPreset);
-        showNotification('Unknown preset selected.', 'error');
-        loadingElement.classList.add('hidden');
-        return;
+      console.error('Unknown selected preset:', selectedPreset);
+      showNotification('Unknown preset selected.', 'error');
+      loadingElement.classList.add('hidden');
+      resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); // Ensure scroll on error
+      return;
   }
   
-  // Create prompt for text enhancement
-  const prompt = `
-    Please rewrite the following text in a ${tone} tone.
-    ${context ? `Additional context or requirements: ${context}` : ''}
-    
-    Original text:
-    ${originalText}
-    
-    Provide ONLY the enhanced text in your response, with no additional comments or explanations. Do NOT format as JSON.
+  // Create prompt for text enhancement - Aligned with openai.js structure
+  const systemPrompt = `
+    You are an expert content writer who specializes in adapting text for different platforms while maintaining the core message.
+    ${toneInstruction}
+    Return ONLY the enhanced text without any additional formatting, markdown, code blocks, or additional notes.
   `;
+  const userPrompt = originalText;
   
-  const rawResult = await callOpenAI(prompt);
+  // Do NOT pass expectJson = true
+  const rawResult = await callOpenAI(userPrompt, null, systemPrompt); 
   
   // Hide loading indicator
   loadingElement.classList.add('hidden');
@@ -771,27 +967,28 @@ async function enhanceText() {
   if (rawResult) {
     let finalText = rawResult.trim();
     
-    // Attempt to parse as JSON in case the AI ignored the instruction
-    try {
-      const jsonResult = safeJsonParse(rawResult);
-      // Use text property if available (flexible key names)
-      if (jsonResult && (jsonResult.text || jsonResult.enhancedText || jsonResult.rewrittenText)) {
-        finalText = jsonResult.text || jsonResult.enhancedText || jsonResult.rewrittenText;
-      }
-    } catch (e) {
-      // Parsing failed, likely just plain text. Clean potential fences.
-      finalText = rawResult.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
-    }
-    
+    // Since the prompt asks for plain text, just use the raw result directly after trimming.
+    // We assume the AI followed the instruction to NOT return JSON.
+    finalText = rawResult.trim();
+
     resultTextElement.textContent = finalText;
     
     // Setup copy handler
-    resultContainer.addEventListener('click', () => {
-      copyToClipboard(finalText);
-      showNotification('Copied to clipboard!', 'success');
-    });
+    const copyHandler = () => {
+        copyToClipboard(finalText);
+        showNotification('Copied to clipboard!', 'success');
+    };
+    // Remove previous listener before adding new one
+    resultContainer.replaceWith(resultContainer.cloneNode(true)); // Clone node to remove listeners
+    document.getElementById('enhance-result').addEventListener('click', copyHandler);
+
+    // Scroll the result container into view after displaying the text
+    document.getElementById('enhance-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
   } else {
     resultTextElement.textContent = 'Failed to enhance text. Please try again.';
+    // Also scroll into view if there was an error
+    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
@@ -872,59 +1069,104 @@ function populateLanguageChips() {
 // Translate text to selected language
 async function translateText(targetLanguage) {
   if (!originalText || !openaiApiKey || !targetLanguage) return;
-  
+
   // Store the current target language to prevent automatic changes
   const currentTargetLang = targetLanguage;
-  
+  const cacheKey = `${originalText}_${currentTargetLang.code}`; // Unique key for text + language
+
   const loadingElement = document.querySelector('#translate-result .loading');
   const resultTextElement = document.querySelector('#translate-result .result-text');
   const resultContainer = document.getElementById('translate-result');
   const targetLanguageSpan = document.getElementById('target-language');
-  
+
+  // --- Caching Logic ---
+  if (translationCache[cacheKey]) {
+    console.log(`Using cached translation for language: ${currentTargetLang.code}`);
+    const jsonResult = translationCache[cacheKey];
+    try {
+      targetLanguageSpan.textContent = currentTargetLang.name;
+      resultTextElement.innerHTML = `
+        <div>${escapeHtml(jsonResult.translation)}</div>
+        ${jsonResult.notes ? `<div class="translation-notes"><span class="material-icons">info</span><strong>Translation Notes:</strong> ${escapeHtml(jsonResult.notes)}</div>` : ''}
+      `;
+      resultContainer.classList.remove('hidden');
+      loadingElement.classList.add('hidden'); // Ensure loading is hidden
+
+      // Setup copy handler for cached result
+      const copyHandler = () => {
+        copyToClipboard(jsonResult.translation);
+        showNotification('Copied to clipboard!', 'success');
+        resultContainer.removeEventListener('click', copyHandler); // Remove listener after copy
+      };
+      // Remove any previous listeners before adding a new one
+      resultContainer.replaceWith(resultContainer.cloneNode(true)); // Simple way to remove all listeners
+      document.getElementById('translate-result').addEventListener('click', copyHandler);
+
+
+    } catch (error) {
+       console.error('Error displaying cached translation:', error);
+       resultTextElement.textContent = 'Error displaying cached translation.';
+    }
+    return; // Exit function after using cache
+  }
+  // --- End Caching Logic ---
+
+  console.log(`No cache hit, fetching translation for language: ${currentTargetLang.code}`);
   // Show loading indicator
   targetLanguageSpan.textContent = currentTargetLang.name;
   loadingElement.classList.remove('hidden');
   resultContainer.classList.remove('hidden');
   resultTextElement.innerHTML = '';
-  
-  // Create prompt for translation
-  const prompt = `
-    Please translate the following text to ${currentTargetLang.name} (${currentTargetLang.native}).
-    Format your response as a JSON object with the following structure:
+
+  // Create prompt for translation - Aligned with openai.js structure
+  const systemPrompt = `
+    You are a professional translator. Translate the following text to ${currentTargetLang.name} (${currentTargetLang.native}).
+    Before translating, proofread the text and improve wording if needed for the target language.
+    Maintain the tone and style of the original text. Return a JSON object with:
     {
-      "translation": "The translated text",
-      "notes": "Any relevant notes about the translation (cultural context, idioms, etc.)"
+      "translation": "The translated text (without any markdown or special formatting)",
+      "notes": "Any relevant notes about cultural context or idioms (optional)"
     }
-    
-    Text to translate:
-    ${originalText}
+    IMPORTANT: Return ONLY the raw JSON without any markdown formatting, code blocks, or additional text.
   `;
+  const userPrompt = originalText;
   
-  const result = await callOpenAI(prompt);
-  
+  // Pass expectJson = true
+  const result = await callOpenAI(userPrompt, null, systemPrompt, true);
+
   // Hide loading indicator
   loadingElement.classList.add('hidden');
-  
+
   if (result) {
     try {
       const jsonResult = safeJsonParse(result);
-      
-      if (!jsonResult) {
+
+      if (!jsonResult || typeof jsonResult.translation === 'undefined') { // Check for translation property
         resultTextElement.textContent = 'Error processing translation result.';
         return;
       }
-      
+
+      // Store successful result in cache
+      translationCache[cacheKey] = jsonResult;
+      console.log(`Cached new translation for language: ${currentTargetLang.code}`);
+
       // Display the translation
       resultTextElement.innerHTML = `
         <div>${escapeHtml(jsonResult.translation)}</div>
         ${jsonResult.notes ? `<div class="translation-notes"><span class="material-icons">info</span><strong>Translation Notes:</strong> ${escapeHtml(jsonResult.notes)}</div>` : ''}
       `;
-      
-      // Setup copy handler
-      resultContainer.addEventListener('click', () => {
+
+      // Setup copy handler for new result
+      const copyHandler = () => {
         copyToClipboard(jsonResult.translation);
         showNotification('Copied to clipboard!', 'success');
-      });
+        resultContainer.removeEventListener('click', copyHandler); // Remove listener after copy
+      };
+      // Remove any previous listeners before adding a new one
+      resultContainer.replaceWith(resultContainer.cloneNode(true)); // Simple way to remove all listeners
+      document.getElementById('translate-result').addEventListener('click', copyHandler);
+
+
     } catch (error) {
       console.error('Error processing translation result:', error);
       resultTextElement.textContent = 'Error processing translation result.';
@@ -942,9 +1184,8 @@ function copyToClipboard(text) {
 }
 
 // Show notification
-function showNotification(message, type = 'info') {
+function showNotification(message, type = 'info', duration = 3000, event = null) {
   let notificationElement = document.getElementById('notification');
-  let timeoutId = null;
   
   if (!notificationElement) {
     notificationElement = document.createElement('div');
@@ -953,44 +1194,87 @@ function showNotification(message, type = 'info') {
   }
   
   // Clear existing timeout if exists
-  if (notificationElement.dataset.timeoutId) {
-    clearTimeout(parseInt(notificationElement.dataset.timeoutId));
+  const existingTimeoutId = notificationElement.dataset.timeoutId;
+  if (existingTimeoutId) {
+    clearTimeout(parseInt(existingTimeoutId));
+    notificationElement.removeAttribute('data-timeout-id'); // Remove old ID
   }
   
+  // --- Style and Content ---
   // Set background color based on type
   let bgColor = 'var(--text-primary)'; // Default info color
   switch (type) {
-    case 'success':
-      bgColor = 'var(--success-color)';
-      break;
-    case 'error':
-      bgColor = 'var(--error-color)';
-      break;
+    case 'success': bgColor = 'var(--success-color)'; break;
+    case 'error': bgColor = 'var(--error-color)'; break;
   }
   notificationElement.style.backgroundColor = bgColor;
-  
-  // Set message
   notificationElement.textContent = message;
-  
-  // Set data-type attribute for styling
   notificationElement.setAttribute('data-type', type);
-  
-  // Add 'show' class to trigger animation
-  requestAnimationFrame(() => {
-      notificationElement.classList.add('show');
-  });
 
-  // Set timeout to remove 'show' class and hide
-  timeoutId = setTimeout(() => {
-    notificationElement.classList.remove('show');
-    // Optional: Remove element after transition if desired
-    // setTimeout(() => { 
-    //   if (document.body.contains(notificationElement)) { 
-    //     document.body.removeChild(notificationElement); 
-    //   }
-    // }, 300); // Match transition duration
-  }, 3000);
-  
-  // Store timeout ID on the element
-  notificationElement.dataset.timeoutId = timeoutId.toString();
+  // --- Positioning --- 
+  if (event) {
+    // Position near cursor
+    notificationElement.style.bottom = 'auto'; // Reset bottom/transform
+    notificationElement.style.left = 'auto';
+    notificationElement.style.transform = 'none';
+    
+    const offsetX = 10; // Offset from cursor X
+    const offsetY = 15; // Offset from cursor Y
+    let posX = event.clientX + offsetX;
+    let posY = event.clientY + offsetY;
+    
+    // Temporarily show to measure dimensions
+    notificationElement.style.visibility = 'hidden';
+    notificationElement.style.display = 'block'; 
+    notificationElement.classList.add('show'); // Needs opacity 1 for getBoundingClientRect
+    
+    const rect = notificationElement.getBoundingClientRect();
+    const popupWidth = window.innerWidth;
+    const popupHeight = window.innerHeight;
+    
+    // Keep within popup bounds
+    if (posX + rect.width > popupWidth - 10) { // Adjust if overflows right
+      posX = event.clientX - rect.width - offsetX; 
+    }
+    if (posY + rect.height > popupHeight - 10) { // Adjust if overflows bottom
+      posY = event.clientY - rect.height - offsetY;
+    }
+    // Ensure it doesn't go off top/left either
+    posX = Math.max(10, posX);
+    posY = Math.max(10, posY);
+
+    notificationElement.style.left = `${posX}px`;
+    notificationElement.style.top = `${posY}px`;
+    
+    // Make visible again
+    notificationElement.style.visibility = 'visible';
+
+  } else {
+    // Position at bottom-center (fallback)
+    notificationElement.style.left = '50%';
+    notificationElement.style.bottom = '16px';
+    notificationElement.style.top = 'auto'; // Reset top
+    notificationElement.style.transform = 'translateX(-50%)';
+    notificationElement.style.display = 'block'; // Ensure display is block
+    notificationElement.classList.add('show'); // Show it
+  }
+
+  // --- Auto-hide Timeout --- 
+  if (duration > 0) {
+      const timeoutId = setTimeout(() => {
+        notificationElement.classList.remove('show');
+        notificationElement.removeAttribute('data-timeout-id');
+        // Optional: Remove element after transition if desired
+        // setTimeout(() => { 
+        //   if (document.body.contains(notificationElement)) { 
+        //     document.body.removeChild(notificationElement); 
+        //   }
+        // }, 300); // Match transition duration
+      }, duration);
+      
+      // Store timeout ID on the element
+      notificationElement.dataset.timeoutId = timeoutId.toString();
+  } else {
+    notificationElement.removeAttribute('data-timeout-id');
+  }
 } 

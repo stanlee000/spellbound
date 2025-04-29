@@ -60,15 +60,20 @@
 }
 
 .spellbound-logo {
-  padding: 0 10px;
-  font-size: 16px;
-  color: white;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   pointer-events: none;
+}
+
+.spellbound-logo img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: auto 0;
 }
 
 .spellbound-action-button {

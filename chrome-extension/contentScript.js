@@ -36,7 +36,9 @@ function createFloatingMenu() {
   
   // Add logo and buttons with data attributes for delegation
   floatingMenu.innerHTML = `
-    <div class="spellbound-logo">🪄</div> 
+    <div class="spellbound-logo">
+        <img src="${chrome.runtime.getURL('icons/icon16.png')}" alt="Spellbound Logo">
+    </div> 
     <div class="spellbound-action-button" data-action="grammar"><span>Grammar & Style</span></div>
     <div class="spellbound-action-button" data-action="enhance"><span>Enhance & Rewrite</span></div>
     <div class="spellbound-action-button" data-action="translate"><span>Translate</span></div>
@@ -293,8 +295,13 @@ function showFloatingMenu() {
       }
     });
   } catch (error) {
-    console.error('[showFloatingMenu] Top-level error:', error);
-    selectedText = ''; // Clear on error
+    // Ignore context invalidated errors, as they are expected if the popup closes.
+    if (error.message && error.message.includes('Extension context invalidated')) {
+        console.warn('[showFloatingMenu] Context invalidated, likely popup closed.');
+    } else {
+        console.error('[showFloatingMenu] Top-level error:', error);
+    }
+    selectedText = ''; // Clear on error regardless
   }
 }
 

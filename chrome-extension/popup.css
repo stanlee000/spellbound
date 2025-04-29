@@ -54,10 +54,20 @@ body {
   color: var(--text-on-dark);
   padding: 10px 16px;
   font-weight: 600;
+  flex-shrink: 0; /* Prevent shrinking */
 }
 
 .logo {
   font-size: 16px;
+  display: flex; /* Use flexbox */
+  align-items: center; /* Align logo and text vertically */
+  gap: 8px; /* Add space between logo and text */
+}
+
+.title-bar-logo {
+  width: 22px; /* Set explicit size */
+  height: 22px;
+  display: block; /* Or inline-block */
 }
 
 .settings-icon {
@@ -113,7 +123,7 @@ body {
 }
 
 .description {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: var(--text-secondary);
   font-size: 14px;
 }
@@ -124,8 +134,8 @@ body {
   background-color: var(--background-color);
   border-radius: 8px;
   border: 1px solid var(--border-color);
-  padding: 16px;
-  margin-bottom: 20px;
+  padding: 12px;
+  margin-bottom: 16px;
   cursor: pointer;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 1px 2px var(--shadow-color);
@@ -141,6 +151,10 @@ body {
   line-height: 1.7;
   font-family: inherit;
   color: var(--text-primary);
+}
+
+.result-text.translate-result {
+  white-space: normal;
 }
 
 .result-footer {
@@ -185,7 +199,7 @@ body {
 
 /* Translation Notes */
 .translation-notes {
-  margin-top: 16px;
+  margin-top: 12px;
   padding: 12px;
   background-color: var(--background-light);
   border-radius: 6px;
@@ -329,40 +343,32 @@ body {
 .language-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
 .language-chip {
-  padding: 6px 12px;
-  border-radius: 16px;
+  padding: 6px 10px;
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
-  font-size: 13px;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--text-primary);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .language-chip:hover {
-  background-color: var(--background-light);
-  border-color: var(--text-secondary);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 .language-chip.selected {
-  /* background-color: var(--primary-color); */
-  /* color: white; */
-  /* border-color: var(--primary-color); */ 
-  /* background-color: var(--background-light); */
-  /* color: var(--primary-color); */
-  /* box-shadow: 0 0 0 1px var(--primary-color); */ 
-
-  /* New selected style: Dark border and text */
+  background-color: var(--text-primary);
+  color: var(--text-on-dark);
   border-color: var(--text-primary);
-  background-color: var(--background-light);
-  color: var(--text-primary);
   font-weight: 500;
-  box-shadow: 0 0 0 1px var(--text-primary); /* Dark ring */
 }
 
 /* API Key Setup */
@@ -597,29 +603,66 @@ body {
 /* Notification */
 #notification {
   position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   padding: 10px 16px;
   border-radius: 6px;
+  background-color: var(--text-primary);
   color: var(--text-on-dark);
   font-size: 14px;
   z-index: 2000;
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  max-width: 90%;
-  word-break: break-word;
+  max-width: 300px;
+  word-wrap: break-word;
   opacity: 0;
-  transform: translate(-50%, 10px);
+  pointer-events: none;
 }
 
 #notification.show {
   opacity: 1;
-  transform: translateX(-50%);
 }
 
 /* Set background based on type AFTER defining base styles */
 #notification[data-type="success"] { background-color: var(--success-color); }
 #notification[data-type="error"] { background-color: var(--error-color); }
 #notification[data-type="info"] { background-color: var(--text-primary); } /* Default/Info is dark grey/black */
-#notification:not([data-type]) { background-color: var(--text-primary); } /* Fallback is dark grey/black */ 
+#notification:not([data-type]) { background-color: var(--text-primary); } /* Fallback is dark grey/black */
+
+/* Adjust margin specifically for the result container in the translate tab */
+#translate-tab .result-container {
+    margin-top: 12px;
+    margin-bottom: 12px;
+} 
+
+/* Guidance Box for No Text Selected */
+.guidance-box {
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start; /* Align icon to top */
+  gap: 12px;
+  color: var(--text-secondary);
+  box-shadow: 0 1px 2px var(--shadow-color);
+}
+
+.guidance-box .material-icons {
+  color: var(--text-secondary); /* Match text color */
+  font-size: 20px;
+  margin-top: 1px; /* Align slightly better with text */
+}
+
+.guidance-box p {
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+}
+
+.guidance-box p:last-child {
+  margin-bottom: 0;
+}
+
+.guidance-box strong {
+  color: var(--text-primary);
+  font-weight: 600;
+} 

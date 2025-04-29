@@ -10,7 +10,10 @@
 <body>
   <div id="app">
     <div class="title-bar">
-      <div class="logo">Spellbound</div>
+      <div class="logo">
+        <img src="icons/icon32.png" alt="Spellbound logo" class="title-bar-logo">
+        Spellbound
+      </div>
       <div class="settings-icon" id="settingsButton">
         <span class="material-icons">settings</span>
       </div>
@@ -23,7 +26,8 @@
         <input type="password" id="apiKeyInput" placeholder="sk-...">
         <button id="saveApiKey" class="primary-button">Save API Key</button>
       </div>
-      <p class="disclaimer">Your API key is stored locally and is only used to communicate with OpenAI's services.</p>
+      <p class="disclaimer">Your API key is stored locally and is only used to communicate with OpenAI's services. To get your API key, visit your
+        <a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" target="_blank" rel="noopener noreferrer">OpenAI account settings</a></p>
     </div>
     
     <div id="main-content" class="hidden">
@@ -39,7 +43,15 @@
           <div class="description">
             Click on the highlighted text below to apply each suggestion.
           </div>
-          <div id="grammar-result" class="result-container">
+          <!-- Guidance message for when no text is selected -->
+          <div id="no-text-info" class="guidance-box hidden">
+            <span class="material-icons">info</span>
+            <div>
+              <p><strong>No text selected.</strong></p>
+              <p>To use Spellbound, select some text on a webpage, right-click, and choose an action (e.g., "Check Grammar & Style").</p>
+            </div>
+          </div>
+          <div id="grammar-result" class="result-container hidden">
             <div class="loading hidden">
               <div class="spinner"></div>
               <p>Checking your text...</p>
@@ -179,7 +191,7 @@
               <div class="spinner"></div>
               <p>Translating to <span id="target-language"></span>...</p>
             </div>
-            <div class="result-text"></div>
+            <div class="result-text translate-result"></div>
             <div class="result-footer">Click to copy the translation</div>
           </div>
         </div>
@@ -196,16 +208,15 @@
           <div class="setting-group">
             <label for="apiKeySettings">OpenAI API Key</label>
             <input type="password" id="apiKeySettings" placeholder="sk-...">
+            <p class="setting-description">To get your API key, visit your
+              <a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" target="_blank" rel="noopener noreferrer">OpenAI account settings</a></p>
           </div>
           
           <div class="setting-group">
             <label for="modelSelector">OpenAI Model</label>
             <select id="modelSelector" class="model-selector">
-              <option value="gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-4o-mini">GPT-4o Mini</option>
-              <option value="gpt-4.1">GPT-4.1</option>
-              <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+              <!-- Options will be populated dynamically by popup.js -->
+              <option value="" disabled selected>Loading models...</option> 
             </select>
             <p class="setting-description">Select the OpenAI model to use for processing text. More advanced models offer better results but may be slower or more expensive.</p>
           </div>
@@ -214,6 +225,7 @@
             <label for="defaultLanguageSelector">Default Translation Language</label>
             <select id="defaultLanguageSelector" class="model-selector">
               <option value="">None (Select each time)</option>
+              <option value="en">English (English)</option>
               <option value="es">Spanish (Español)</option>
               <option value="fr">French (Français)</option>
               <option value="de">German (Deutsch)</option>
