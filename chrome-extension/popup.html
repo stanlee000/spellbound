@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spellbound</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+  <div id="app">
+    <div class="title-bar">
+      <div class="logo">Spellbound</div>
+      <div class="settings-icon" id="settingsButton">
+        <span class="material-icons">settings</span>
+      </div>
+    </div>
+    
+    <div id="api-key-setup" class="api-key-container">
+      <h2>Welcome to Spellbound</h2>
+      <p>To get started, please enter your OpenAI API key:</p>
+      <div class="input-container">
+        <input type="password" id="apiKeyInput" placeholder="sk-...">
+        <button id="saveApiKey" class="primary-button">Save API Key</button>
+      </div>
+      <p class="disclaimer">Your API key is stored locally and is only used to communicate with OpenAI's services.</p>
+    </div>
+    
+    <div id="main-content" class="hidden">
+      <div class="tabs">
+        <div class="tab" data-tab="grammar">Grammar & Style</div>
+        <div class="tab" data-tab="enhance">Enhance & Rewrite</div>
+        <div class="tab" data-tab="translate">Translate</div>
+      </div>
+      
+      <div class="tab-content">
+        <!-- Grammar Tab Content -->
+        <div id="grammar-tab" class="tab-panel">
+          <div class="description">
+            Click on the highlighted text below to apply each suggestion.
+          </div>
+          <div id="grammar-result" class="result-container">
+            <div class="loading hidden">
+              <div class="spinner"></div>
+              <p>Checking your text...</p>
+            </div>
+            <div class="result-text"></div>
+            <div class="result-footer">Click anywhere to copy the entire text</div>
+          </div>
+          <div id="language-specific" class="language-specific hidden">
+            <h3>Language-Specific Suggestions</h3>
+            <ul id="language-specific-list"></ul>
+          </div>
+        </div>
+        
+        <!-- Enhance Tab Content -->
+        <div id="enhance-tab" class="tab-panel hidden">
+          <div class="description">
+            Select a preset or customize how you want to enhance your text:
+          </div>
+          <div id="enhance-result" class="result-container hidden">
+            <div class="loading hidden">
+              <div class="spinner"></div>
+              <p>Enhancing your text...</p>
+            </div>
+            <div class="result-text"></div>
+            <div class="result-footer">Click to copy the enhanced text</div>
+          </div>
+          <div class="presets-grid">
+            <div class="preset-card" data-preset="twitter">
+              <div class="preset-header">
+                <span class="material-icons">tag</span>
+                <h3>X (Twitter)</h3>
+              </div>
+              <p>Transform your text into an engaging tweet with hashtags.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Additional context" class="context-input" data-context="twitter">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
+            </div>
+            
+            <div class="preset-card" data-preset="linkedin">
+              <div class="preset-header">
+                <span class="material-icons">work</span>
+                <h3>LinkedIn</h3>
+              </div>
+              <p>Enhance your text for professional networking.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Additional context" class="context-input" data-context="linkedin">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
+            </div>
+            
+            <div class="preset-card" data-preset="instagram">
+              <div class="preset-header">
+                <span class="material-icons">photo_camera</span>
+                <h3>Instagram</h3>
+              </div>
+              <p>Create an authentic and engaging post for Instagram.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Add content theme" class="context-input" data-context="instagram">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
+            </div>
+
+            <div class="preset-card" data-preset="hackernews">
+              <div class="preset-header">
+                <span class="material-icons">code</span>
+                <h3>Hacker News</h3>
+              </div>
+              <p>Optimize for technical accuracy and objective analysis.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Add technical focus" class="context-input" data-context="hackernews">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
+            </div>
+            
+            <div class="preset-card" data-preset="reddit">
+              <div class="preset-header">
+                <span class="material-icons">forum</span>
+                <h3>Reddit</h3>
+              </div>
+              <p>Format text in a conversational style for Reddit.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Add subreddit context" class="context-input" data-context="reddit">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
+            </div>
+            
+            <div class="preset-card" data-preset="promptBuilder">
+              <div class="preset-header">
+                <span class="material-icons">auto_fix_high</span>
+                <h3>Prompt Builder</h3>
+              </div>
+              <p>Structure text as a well-formed LLM prompt.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Add requirements" class="context-input" data-context="promptBuilder">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Build Prompt</button>
+            </div>
+            
+            <div class="preset-card" data-preset="academic">
+              <div class="preset-header">
+                <span class="material-icons">school</span>
+                <h3>Academic</h3>
+              </div>
+              <p>Formalize your text for academic contexts.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Additional context" class="context-input" data-context="academic">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
+            </div>
+            
+            <div class="preset-card" data-preset="custom">
+              <div class="preset-header">
+                <span class="material-icons">edit</span>
+                <h3>Custom</h3>
+              </div>
+              <p>Customize tone and style for your specific needs.</p>
+              <div class="context-field">
+                <input type="text" placeholder="Describe tone" class="context-input" data-context="customTone">
+                <input type="text" placeholder="Additional context" class="context-input" data-context="customContext">
+              </div>
+              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Custom Style</button>
+            </div>
+          </div>
+          
+        </div>
+        
+        <!-- Translate Tab Content -->
+        <div id="translate-tab" class="tab-panel hidden">
+          <div class="description">
+            Select a language to translate your text:
+          </div>
+          <div class="language-chips"></div>
+          
+          <div id="translate-result" class="result-container hidden">
+            <div class="loading hidden">
+              <div class="spinner"></div>
+              <p>Translating to <span id="target-language"></span>...</p>
+            </div>
+            <div class="result-text"></div>
+            <div class="result-footer">Click to copy the translation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="settings-dialog" class="dialog hidden">
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h2>Settings</h2>
+          <span class="material-icons close-dialog">close</span>
+        </div>
+        <div class="dialog-body">
+          <div class="setting-group">
+            <label for="apiKeySettings">OpenAI API Key</label>
+            <input type="password" id="apiKeySettings" placeholder="sk-...">
+          </div>
+          
+          <div class="setting-group">
+            <label for="modelSelector">OpenAI Model</label>
+            <select id="modelSelector" class="model-selector">
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+              <option value="gpt-4.1">GPT-4.1</option>
+              <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+            </select>
+            <p class="setting-description">Select the OpenAI model to use for processing text. More advanced models offer better results but may be slower or more expensive.</p>
+          </div>
+          
+          <div class="setting-group">
+            <label for="defaultLanguageSelector">Default Translation Language</label>
+            <select id="defaultLanguageSelector" class="model-selector">
+              <option value="">None (Select each time)</option>
+              <option value="es">Spanish (Español)</option>
+              <option value="fr">French (Français)</option>
+              <option value="de">German (Deutsch)</option>
+              <option value="it">Italian (Italiano)</option>
+              <option value="pt">Portuguese (Português)</option>
+              <option value="ru">Russian (Русский)</option>
+              <option value="zh">Chinese (中文)</option>
+              <option value="ja">Japanese (日本語)</option>
+              <option value="ko">Korean (한국어)</option>
+              <option value="ar">Arabic (العربية)</option>
+            </select>
+            <p class="setting-description">Choose a default language for translations. This will be pre-selected when you open the translate tab.</p>
+          </div>
+          
+          <!-- Add a container for dialog actions -->
+          <div class="dialog-actions">
+            <button type="button" class="secondary-button close-dialog">Cancel</button>
+            <button id="updateSettings" class="primary-button">Save Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html> 

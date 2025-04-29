@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Convert SVG to PNG Icons</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      padding: 20px;
+    }
+    #svgContainer {
+      width: 128px;
+      height: 128px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #6B46C1;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    .icon-preview {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .preview-label {
+      font-size: 12px;
+      color: #4A5568;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Create PNG Icons from SVG</h1>
+  <p>This page will convert the SVG icon to the required PNG sizes for the Chrome extension.</p>
+  
+  <div id="svgContainer"></div>
+  
+  <div>
+    <button onclick="createIcons([16, 48, 128])">Generate Icons</button>
+    <button onclick="downloadAll()">Download All Icons</button>
+  </div>
+  
+  <div class="icon-preview" id="previewContainer"></div>
+  
+  <script>
+    // Load the SVG
+    const svgContainer = document.getElementById('svgContainer');
+    const previewContainer = document.getElementById('previewContainer');
+    let iconsData = {};
+    
+    fetch('icon.svg')
+      .then(response => response.text())
+      .then(svgText => {
+        svgContainer.innerHTML = svgText;
+      });
+    
+    function createIcons(sizes) {
+      // Clear previous previews
+      previewContainer.innerHTML = '';
+      
+      // Get the SVG element
+      const svgElement = svgContainer.querySelector('svg');
+      if (!svgElement) {
+        alert('SVG not loaded yet');
+        return;
+      }
+      
+      // Create a serialized version of the SVG
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svgElement);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      // Generate icons for each size
+      sizes.forEach(size => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        const img = new Image();
+        img.onload = function() {
+          ctx.drawImage(img, 0, 0, size, size);
+          
+          // Create preview
+          const previewItem = document.createElement('div');
+          previewItem.className = 'preview-item';
+          
+          const previewImage = document.createElement('img');
+          previewImage.src = canvas.toDataURL('image/png');
+          previewImage.width = size;
+          previewImage.height = size;
+          
+          const previewLabel = document.createElement('div');
+          previewLabel.className = 'preview-label';
+          previewLabel.textContent = `${size}x${size}`;
+          
+          previewItem.appendChild(previewImage);
+          previewItem.appendChild(previewLabel);
+          previewContainer.appendChild(previewItem);
+          
+          // Store the icon data
+          iconsData[`icon${size}`] = canvas.toDataURL('image/png');
+        };
+        img.src = svgUrl;
+      });
+    }
+    
+    function downloadAll() {
+      Object.keys(iconsData).forEach(key => {
+        const size = key.replace('icon', '');
+        const link = document.createElement('a');
+        link.download = `icon${size}.png`;
+        link.href = iconsData[key];
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    }
+  </script>
+</body>
+</html> 

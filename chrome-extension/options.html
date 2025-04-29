@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spellbound Settings</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      background-color: #f9f9f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      overflow-y: auto;
+    }
+    
+    body {
+      padding: 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 40px;
+    }
+    
+    h1 {
+      margin-top: 0;
+      color: #6B46C1;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .range-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    input[type="range"] {
+      flex: 1;
+    }
+    
+    .range-value {
+      margin-left: 15px;
+      font-weight: bold;
+      min-width: 30px;
+    }
+    
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    input[type="checkbox"] {
+      margin-right: 10px;
+    }
+    
+    button {
+      background-color: #6B46C1;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #5A32A3;
+    }
+    
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      background-color: #f0fff4;
+      color: #276749;
+      display: none;
+    }
+    
+    .description {
+      color: #666;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Spellbound Settings</h1>
+    
+    <form id="settings-form">
+      <div class="form-group">
+        <label for="api-key">OpenAI API Key</label>
+        <input type="password" id="api-key" placeholder="sk-...">
+        <div class="description">Your API key is stored locally and is only used to communicate with OpenAI.</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="model-select">AI Model</label>
+        <select id="model-select">
+          <option value="gpt-4-turbo">GPT-4 Turbo</option>
+          <option value="gpt-4o">GPT-4o</option>
+          <option value="gpt-4o-mini">GPT-4o Mini</option>
+          <option value="gpt-4.1">GPT-4.1</option>
+          <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+        </select>
+        <div class="description">Select the OpenAI model to use. More advanced models offer better results but may cost more.</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="temperature">Temperature</label>
+        <div class="range-container">
+          <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+          <span class="range-value" id="temperature-value">0.7</span>
+        </div>
+        <div class="description">Controls randomness: Lower values are more deterministic, higher values are more creative.</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="default-language">Default Translation Language</label>
+        <select id="default-language">
+          <option value="">None (Select each time)</option>
+          <option value="es">Spanish (Español)</option>
+          <option value="fr">French (Français)</option>
+          <option value="de">German (Deutsch)</option>
+          <option value="it">Italian (Italiano)</option>
+          <option value="pt">Portuguese (Português)</option>
+          <option value="ru">Russian (Русский)</option>
+          <option value="zh">Chinese (中文)</option>
+          <option value="ja">Japanese (日本語)</option>
+          <option value="ko">Korean (한국어)</option>
+          <option value="ar">Arabic (العربية)</option>
+        </select>
+        <div class="description">Choose a default language for translations. This will be pre-selected when you open the translate tab.</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="custom-models">Custom Models (Optional)</label>
+        <textarea id="custom-models" placeholder="Display Name, model-id"></textarea>
+        <div class="description">Add custom models in the format: Display Name, model-id (one per line)</div>
+      </div>
+      
+      <div class="form-group">
+        <div class="checkbox-container">
+          <input type="checkbox" id="disable-floating-menu">
+          <label for="disable-floating-menu">Disable Floating Menu</label>
+        </div>
+        <div class="description">Turn off the floating menu that appears when selecting text.</div>
+      </div>
+      
+      <button type="submit">Save Settings</button>
+    </form>
+    
+    <div id="status" class="status">Settings saved successfully!</div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html> 

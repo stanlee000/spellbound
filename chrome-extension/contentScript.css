@@ -1,0 +1,191 @@
+#spellbound-floating-button {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #6B46C1;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  cursor: pointer;
+  display: none;
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  border: 2px solid white;
+}
+
+#spellbound-floating-button:hover {
+  transform: scale(1.1);
+  background-color: #805AD5;
+}
+
+.spellbound-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.spellbound-button-appear {
+  animation: spellbound-fade-in 0.3s ease-in-out;
+}
+
+@keyframes spellbound-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#spellbound-floating-menu {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  border-radius: 6px;
+  background-color: #1A202C;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  z-index: 2147483647;
+  overflow: visible;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  font-size: 12px;
+  pointer-events: auto;
+}
+
+.spellbound-logo {
+  padding: 0 10px;
+  font-size: 16px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.spellbound-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  height: 100%;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  pointer-events: auto;
+}
+
+.spellbound-action-button:hover {
+  background-color: #2D3748;
+}
+
+.spellbound-action-button:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.spellbound-menu-appear {
+  animation: spellbound-fade-in 0.3s ease-in-out;
+}
+
+@keyframes spellbound-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spellbound-disable-button {
+  position: relative;
+}
+
+.spellbound-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 180px;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: none;
+  z-index: 2147483647;
+  margin-top: 5px;
+  border: 1px solid #e2e8f0;
+  pointer-events: auto;
+}
+
+.spellbound-dropdown.active {
+  display: block;
+  animation: dropdown-appear 0.2s ease-in-out;
+}
+
+@keyframes dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spellbound-dropdown-item {
+  padding: 8px 12px;
+  color: #1A202C;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 12px;
+  transition: background-color 0.1s ease-in-out;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.spellbound-dropdown-item:hover {
+  background-color: #f0f4f8;
+}
+
+.spellbound-dropdown-item:first-child {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.spellbound-feedback {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 4px;
+  background-color: #1A202C;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  animation: feedback-appear 0.3s ease-in-out;
+}
+
+@keyframes feedback-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+} 
