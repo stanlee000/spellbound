@@ -1,7 +1,7 @@
 # <div align="center"><img width="32px" src="https://github.com/user-attachments/assets/6518bc67-bfe5-484b-ad5f-ed8beca1f2e1"> Spellbound - your multilingual AI-powered writing assistant</div>
 
 <div align="center" style="border: 1px solid black; border-radius: 15px;">
-  <p>Just hit a shortcut for instant translations or writing tips to boost your workflow automation.</p>
+  <p>Just hit a shortcut for instant translations, grammar fixes, or text enhancements to supercharge your workflow.</p>
 
   <kbd>
     <img width="600px" src="https://github.com/user-attachments/assets/011ca246-a538-46aa-9e10-30342822184b" alt="spellbound_screenhots_1"/>
