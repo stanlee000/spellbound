@@ -30,14 +30,25 @@ chrome.runtime.onInstalled.addListener(() => {
 
   // Initialize storage with default settings if needed
   chrome.storage.local.get(['apiKey', 'settings'], (result) => {
-    if (!result.apiKey) {
+    // Check if settings object exists, initialize if not or if apiKey is missing
+    if (!result.settings || !result.hasOwnProperty('apiKey')) {
       chrome.storage.local.set({
-        apiKey: '',
+        apiKey: result.apiKey || '', // Keep existing API key if present
         settings: {
           hasSeenInstructions: false,
-          selectedModel: 'gpt-4o'
-        }
+          selectedModel: 'gpt-4o',
+          showIndicatorIcon: false // Default: disabled
+        },
+        // Ensure other top-level settings are initialized if needed
+        defaultTranslationLanguage: result.defaultTranslationLanguage || 'en',
+        menuSettings: result.menuSettings || { disabledPages: [], globallyDisabled: false }
       });
+    } else {
+      // If settings exist, ensure the new key is added if missing
+      if (result.settings.showIndicatorIcon === undefined) {
+        result.settings.showIndicatorIcon = false; // Add default if missing
+        chrome.storage.local.set({ settings: result.settings });
+      }
     }
   });
 });
@@ -212,6 +223,87 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
      // We just acknowledge it here.
      sendResponse({ success: true });
      return false; // No further async work needed here
+  }
+  
+  // Handler for getting suggestion count
+  if (message.action === 'getSuggestionCount') {
+    console.log('[Background] Received getSuggestionCount');
+    const text = message.text;
+    if (!text || text.trim().length === 0) {
+      sendResponse({ count: 0 });
+      return false;
+    }
+
+    chrome.storage.local.get(['apiKey', 'settings'], async (result) => {
+      if (chrome.runtime.lastError) {
+        console.error('[Background] Error getting apiKey/settings for count:', chrome.runtime.lastError.message);
+        sendResponse({ error: 'Could not retrieve API key.' });
+        return;
+      }
+      
+      const apiKey = result.apiKey;
+      const settings = result.settings || { selectedModel: 'gpt-4o' };
+      const model = settings.selectedModel || 'gpt-4o'; // Fallback model
+
+      if (!apiKey) {
+        console.warn('[Background] No API key found for suggestion count.');
+        sendResponse({ error: 'API key not set.' });
+        return;
+      }
+
+      // Construct a prompt specifically asking for a list of errors
+      const prompt = `Analyze the following text for grammatical errors, awkward phrasing, and style issues. Do not correct the text. Instead, list each distinct issue you find on a new line, starting each line with "- ". If no issues are found, respond with "No issues found.".
+
+Text:
+"""
+${text}
+"""
+
+Issues found:`;
+
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.2, // Lower temperature for more deterministic counting
+            max_tokens: 150 // Limit tokens as we only need the list
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('[Background] OpenAI API error for count:', response.status, errorData);
+          sendResponse({ error: `API Error: ${errorData?.error?.message || response.statusText}` });
+          return;
+        }
+
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content;
+
+        if (!content || content.trim().toLowerCase() === 'no issues found.') {
+          console.log('[Background] No issues found by API.');
+          sendResponse({ count: 0 });
+        } else {
+          // Count the number of lines starting with "- "
+          const lines = content.trim().split('\n');
+          const count = lines.filter(line => line.trim().startsWith('- ')).length;
+          console.log(`[Background] API found ${count} issues.`);
+          sendResponse({ count: count });
+        }
+
+      } catch (error) {
+        console.error('[Background] Network or fetch error getting suggestion count:', error);
+        sendResponse({ error: 'Network error or failed to fetch count.' });
+      }
+    });
+
+    return true; // Indicate asynchronous response
   }
   
   // Keep original setActiveTab for compatibility if needed elsewhere

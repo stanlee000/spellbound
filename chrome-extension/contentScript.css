@@ -193,4 +193,65 @@
     opacity: 1;
     transform: translate(-50%, 0);
   }
+}
+
+/* Styles for the new Indicator Icon */
+#spellbound-indicator-icon {
+  position: absolute !important;
+  z-index: 9999999;
+  background-color: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease-out;
+  position: relative;
+  animation: spellbound-indicator-appear 0.2s ease-out;
+}
+
+@keyframes spellbound-indicator-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#spellbound-indicator-icon img {
+  width: 16px;
+  height: 16px;
+  display: block;
+  object-fit: contain;
+}
+
+/* Style for the count badge */
+.spellbound-indicator-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: #E53E3E;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+#spellbound-indicator-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
 } 

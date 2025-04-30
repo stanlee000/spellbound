@@ -6,6 +6,7 @@ let selectedTargetLang = null;
 let openaiApiKey = '';
 let selectedModel = 'gpt-4o';
 let defaultTranslationLanguage = '';
+let showIndicatorIcon = false; // New setting global variable
 let contextValues = {
   twitter: '',
   linkedin: '',
@@ -85,6 +86,7 @@ function checkApiKey() {
       // Load settings if available, default model to gpt-4o
       if (response.settings) {
         selectedModel = response.settings.selectedModel || 'gpt-4o';
+        showIndicatorIcon = response.settings.showIndicatorIcon === true; // Explicitly check for true
       }
       
       document.getElementById('api-key-setup').classList.add('hidden');
@@ -223,92 +225,134 @@ function populateModelSelector(models) {
   }
 }
 
-// Setup settings dialog
-function setupSettingsDialog() {
-  const settingsButton = document.getElementById('settingsButton');
-  const settingsDialog = document.getElementById('settings-dialog');
-  const closeButtons = document.querySelectorAll('.close-dialog'); // Select ALL close buttons (icon + Cancel button)
-  const updateSettingsButton = document.getElementById('updateSettings');
-  const modelSelector = document.getElementById('modelSelector');
-  const defaultLangSelector = document.getElementById('defaultLanguageSelector');
-  
-  const dialogContent = settingsDialog.querySelector('.dialog-content'); // Scope querySelector to dialog
-  if (dialogContent) {
-    dialogContent.style.maxHeight = '80vh';
-    dialogContent.style.overflowY = 'auto';
-  }
-  
-  settingsButton.addEventListener('click', async () => { // Make async
-    // Populate the API key field
-    document.getElementById('apiKeySettings').value = openaiApiKey;
-    
-    // Show loading state in model selector
-    modelSelector.innerHTML = '<option value="" disabled selected>Loading models...</option>';
-    
-    // Fetch models and populate selector
-    const availableModels = await fetchAvailableModels();
-    populateModelSelector(availableModels); // Pass fetched models
-    
-    // Load default translation language setting
-    chrome.storage.local.get(['defaultTranslationLanguage'], (result) => {
-      console.log('Current default language setting:', result.defaultTranslationLanguage);
-      if (result.defaultTranslationLanguage && defaultLangSelector) {
-        defaultLangSelector.value = result.defaultTranslationLanguage;
+// Function to load settings from storage
+function loadSettings() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['settings', 'apiKey', 'defaultTranslationLanguage'], (result) => {
+      if (result.settings) {
+        selectedModel = result.settings.selectedModel || 'gpt-4o';
+        showIndicatorIcon = result.settings.showIndicatorIcon === true; // Explicitly check for true
+        // Add any other settings loading here
+      } else {
+        // Default values if settings object is missing
+        selectedModel = 'gpt-4o';
+        showIndicatorIcon = false;
       }
+      if (result.apiKey) {
+        openaiApiKey = result.apiKey;
+      }
+      if (result.defaultTranslationLanguage) {
+          defaultTranslationLanguage = result.defaultTranslationLanguage;
+      }
+      
+      console.log('Loaded Settings:', { selectedModel, showIndicatorIcon, defaultTranslationLanguage });
+      resolve();
     });
-    
-    settingsDialog.classList.remove('hidden');
   });
+}
+
+// Function to save settings to storage
+function saveSettings() {
+  const apiKeyToSave = document.getElementById('apiKeySettings').value.trim();
+  const selectedModelToSave = document.getElementById('modelSelector').value;
+  const defaultLangToSave = document.getElementById('defaultLanguageSelector').value;
+  const showIndicatorIconToSave = document.getElementById('indicatorIconToggle').checked;
+
+  const settingsToSave = {
+    selectedModel: selectedModelToSave,
+    showIndicatorIcon: showIndicatorIconToSave
+    // Add any other settings here
+  };
   
-  // Add listener to all elements intended to close the dialog
-  closeButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      settingsDialog.classList.add('hidden');
-    });
-  });
-  
-  updateSettingsButton.addEventListener('click', () => {
-    const newApiKey = document.getElementById('apiKeySettings').value.trim();
-    const newModel = modelSelector.value;
-    const newDefaultLang = defaultLangSelector ? defaultLangSelector.value : '';
-    
-    if (!newApiKey) {
-      showNotification('Please enter a valid API key', 'error');
-      return;
-    }
-    
-    // Save API key if changed
-    if (newApiKey !== openaiApiKey) {
-      chrome.runtime.sendMessage({ action: 'setApiKey', apiKey: newApiKey }, (response) => {
+  // Save API Key separately if it has changed
+  if (apiKeyToSave !== openaiApiKey) {
+      chrome.runtime.sendMessage({ action: 'setApiKey', apiKey: apiKeyToSave }, (response) => {
         if (response && response.success) {
-          openaiApiKey = newApiKey;
+          openaiApiKey = apiKeyToSave; // Update global on successful save
+          console.log('API Key updated and saved.');
         } else {
-          showNotification('Failed to update API key', 'error');
-          return;
+           showNotification('Failed to save API key update', 'error');
         }
       });
-    }
-    
-    // Save default translation language directly
-    chrome.storage.local.set({ defaultTranslationLanguage: newDefaultLang }, () => {
-      defaultTranslationLanguage = newDefaultLang;
-      console.log('Saved default translation language:', newDefaultLang);
-    });
-    
-    // Save model selection
-    chrome.runtime.sendMessage({ 
-      action: 'saveSettings', 
-      settings: { selectedModel: newModel }
-    }, (response) => {
-      if (response && response.success) {
-        selectedModel = newModel;
-        settingsDialog.classList.add('hidden');
-        showNotification('Settings saved successfully', 'success');
-      } else {
-        showNotification('Failed to save settings', 'error');
-      }
-    });
+  }
+  
+  // Save other settings and default language
+  const storageUpdate = {
+      settings: settingsToSave,
+      defaultTranslationLanguage: defaultLangToSave
+  };
+
+  chrome.storage.local.set(storageUpdate, () => {
+     if (chrome.runtime.lastError) {
+         console.error('Error saving settings:', chrome.runtime.lastError);
+         showNotification('Error saving settings', 'error');
+     } else {
+         console.log('Settings saved:', storageUpdate);
+         // Update global variables immediately
+         selectedModel = selectedModelToSave;
+         showIndicatorIcon = showIndicatorIconToSave;
+         defaultTranslationLanguage = defaultLangToSave;
+         showNotification('Settings saved successfully', 'success');
+         closeSettingsDialog();
+         
+         // Inform content script about the setting change
+         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+           if (tabs[0] && tabs[0].id) {
+             chrome.tabs.sendMessage(tabs[0].id, { action: 'updateIndicatorSettings', enabled: showIndicatorIconToSave });
+           }
+         });
+     }
   });
+}
+
+// Close settings dialog
+function closeSettingsDialog() {
+    document.getElementById('settings-dialog').classList.add('hidden');
+}
+
+// Setup settings dialog
+async function setupSettingsDialog() { // Made async
+  const settingsButton = document.getElementById('settingsButton');
+  const settingsDialog = document.getElementById('settings-dialog');
+  // Get specific buttons for save/cancel
+  const saveButton = document.getElementById('saveSettingsButton'); 
+  const cancelButton = document.getElementById('cancelSettingsButton');
+  const closeIcon = settingsDialog.querySelector('.dialog-header .close-dialog'); // Get the close icon
+
+  const modelSelector = document.getElementById('modelSelector');
+  const defaultLangSelector = document.getElementById('defaultLanguageSelector');
+  const indicatorToggle = document.getElementById('indicatorIconToggle');
+  
+  // Load current settings when dialog opens
+  settingsButton.addEventListener('click', async () => {
+    await loadSettings(); // Ensure settings are loaded before populating
+    
+    document.getElementById('apiKeySettings').value = openaiApiKey;
+    defaultLangSelector.value = defaultTranslationLanguage;
+    indicatorToggle.checked = showIndicatorIcon;
+    
+    modelSelector.innerHTML = '<option value="" disabled selected>Loading models...</option>';
+    settingsDialog.classList.remove('hidden'); // Show dialog first
+    
+    try {
+      const availableModels = await fetchAvailableModels();
+      populateModelSelector(availableModels);
+    } catch (error) {
+      console.error("Error fetching/populating models:", error);
+      populateModelSelector(null); // Populate with defaults on error
+    }
+  });
+
+  // Event listeners for buttons
+  if (saveButton) {
+    saveButton.addEventListener('click', saveSettings);
+  }
+  if (cancelButton) {
+    cancelButton.addEventListener('click', closeSettingsDialog);
+  }
+  if (closeIcon) {
+    closeIcon.addEventListener('click', closeSettingsDialog);
+  }
 }
 
 // Setup preset selection and apply buttons
@@ -317,41 +361,15 @@ function setupPresetSelection() {
   const contextInputs = document.querySelectorAll('.context-input');
   const applyButtons = document.querySelectorAll('.preset-apply-button');
 
-  // Handle card selection
-  presetCards.forEach(card => {
-    card.addEventListener('click', (e) => {
-      // Don't select if clicking the button inside the card
-      if (e.target.closest('.preset-apply-button')) {
-        return;
-      }
-      
-      // Remove selected class from all cards
-      presetCards.forEach(c => c.classList.remove('selected'));
-      
-      // Add selected class to clicked card
-      card.classList.add('selected');
-      
-      // Set selected preset - DO NOT enhance automatically
-      selectedPreset = card.getAttribute('data-preset');
-      console.log('Preset selected:', selectedPreset);
-    });
-  });
-  
   // Handle apply button clicks
   applyButtons.forEach(button => {
     button.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent card click listener
+      e.stopPropagation(); 
       const card = button.closest('.preset-card');
       if (card) {
         const preset = card.getAttribute('data-preset');
-        // Ensure this preset is marked as selected before applying
-        if(selectedPreset !== preset) {
-          presetCards.forEach(c => c.classList.remove('selected'));
-          card.classList.add('selected');
-          selectedPreset = preset; 
-        }
+        selectedPreset = preset; 
         console.log('Apply button clicked for preset:', selectedPreset);
-        // Now enhance the text
         if (originalText) {
           enhanceText(); 
         } else {
@@ -361,8 +379,9 @@ function setupPresetSelection() {
     });
   });
 
-  // Handle context inputs
+  // Handle context inputs (value storage and Shift+Enter trigger)
   contextInputs.forEach(input => {
+    // Store value on input change
     input.addEventListener('input', () => {
       const contextType = input.getAttribute('data-context');
       if (contextValues.hasOwnProperty(contextType)) {
@@ -370,6 +389,21 @@ function setupPresetSelection() {
       } else {
           console.warn('Input has unknown data-context:', contextType);
       }
+    });
+    
+    // Add Shift+Enter listener
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.shiftKey) {
+            e.preventDefault(); // Prevent potential newline or other default actions
+            const card = input.closest('.preset-card');
+            if (card) {
+                const applyButton = card.querySelector('.preset-apply-button');
+                if (applyButton) {
+                    console.log('Shift+Enter detected in context field, triggering apply button.');
+                    applyButton.click(); // Simulate click on the button
+                }
+            }
+        }
     });
   });
 }

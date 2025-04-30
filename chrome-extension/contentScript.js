@@ -5,6 +5,14 @@ let selectionTimeout = null;
 let isMenuDisabledForPage = false;
 let isMouseOverMenu = false; // Track mouse state
 
+// Indicator icon variables
+let indicatorIcon = null;
+let indicatorTargetField = null;
+let typingTimer = null;
+const typingDelay = 1500; // Increased delay to 1.5 seconds
+let suggestionCache = { text: null, count: null };
+let showIndicatorIconEnabled = false; // Default to disabled
+
 // Check if menu is globally disabled
 chrome.storage.local.get(['menuSettings'], (result) => {
   if (result.menuSettings && result.menuSettings.globallyDisabled) {
@@ -17,6 +25,21 @@ chrome.storage.local.get(['menuSettings'], (result) => {
     if (result.menuSettings.disabledPages.includes(currentUrl)) {
       isMenuDisabledForPage = true;
     }
+  }
+});
+
+// Load initial setting
+chrome.storage.local.get(['settings'], (result) => {
+  if (chrome.runtime.lastError) {
+      console.error("Error loading initial settings:", chrome.runtime.lastError);
+      return;
+  }
+  if (result.settings && result.settings.showIndicatorIcon !== undefined) {
+    showIndicatorIconEnabled = result.settings.showIndicatorIcon;
+    console.log('[ContentScript] Initial indicator icon setting:', showIndicatorIconEnabled);
+  } else {
+    console.log('[ContentScript] Indicator icon setting not found, defaulting to false.');
+    showIndicatorIconEnabled = false;
   }
 });
 
@@ -457,11 +480,6 @@ document.addEventListener('selectionchange', () => {
     const selection = window.getSelection();
     const activeElement = document.activeElement;
     
-    // Hide menu if:
-    // 1. Not hovering over the menu AND
-    // 2. Window selection is empty/collapsed AND
-    // 3. EITHER the active element is NOT an input/textarea OR it IS but has no selection within it
-    // 4. AND the menu is currently visible
     const inputHasSelection = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
                               activeElement.selectionStart !== activeElement.selectionEnd;
                               
@@ -470,7 +488,7 @@ document.addEventListener('selectionchange', () => {
         !inputHasSelection &&
         floatingMenu && floatingMenu.style.display !== 'none') 
     {
-      hideFloatingMenu();
+      hideFloatingMenu(); // Only hides the selection floating menu
     }
   } catch (error) {
       console.error('[selectionchange listener] Error:', error);
@@ -479,6 +497,7 @@ document.addEventListener('selectionchange', () => {
 
 document.addEventListener('click', (e) => {
   try {
+    // Hide floating selection menu if clicking outside it
     if (floatingMenu && floatingMenu.style.display !== 'none' && !floatingMenu.contains(e.target)) {
       hideFloatingMenu();
       const dropdown = floatingMenu.querySelector('.spellbound-dropdown.active');
@@ -486,6 +505,14 @@ document.addEventListener('click', (e) => {
         dropdown.classList.remove('active');
       }
     }
+    
+    // Hide indicator icon only if clicking outside the icon AND the target field it belongs to
+    if (indicatorIcon && indicatorIcon.style.display !== 'none' && 
+        !indicatorIcon.contains(e.target) && 
+        (!indicatorTargetField || !indicatorTargetField.contains(e.target))) {
+            hideIndicatorIcon();
+    }
+
   } catch (error) {
       console.error('[click listener] Error:', error);
   }
@@ -493,8 +520,13 @@ document.addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
   try {
-    if (e.key === 'Escape' && floatingMenu && floatingMenu.style.display !== 'none') {
-      hideFloatingMenu();
+    if (e.key === 'Escape') {
+       if (floatingMenu && floatingMenu.style.display !== 'none') {
+         hideFloatingMenu();
+       }
+       if (indicatorIcon && indicatorIcon.style.display !== 'none') {
+         hideIndicatorIcon();
+       }
     }
   } catch (error) {
       console.error('[keydown listener] Error:', error);
@@ -538,6 +570,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
          sendResponse({ success: true }); // Respond after processing
       });
       return true; // Indicate asynchronous response
+    } else if (message.action === 'updateIndicatorSettings') {
+      console.log('[ContentScript] Received indicator setting update:', message.enabled);
+      const wasEnabled = showIndicatorIconEnabled;
+      showIndicatorIconEnabled = message.enabled === true;
+      // If the setting was just disabled, hide any visible icon immediately
+      if (wasEnabled && !showIndicatorIconEnabled) {
+          hideIndicatorIcon();
+      }
+      sendResponse({ success: true });
     }
   } catch (error) {
       console.error('[onMessage listener] General error:', error);
@@ -550,4 +591,279 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   // Return false if not sending an async response
   return false; 
+});
+
+// Function to create or get the indicator icon
+function getOrCreateIndicatorIcon() {
+  if (!indicatorIcon || !document.body.contains(indicatorIcon)) {
+    indicatorIcon = document.createElement('div');
+    indicatorIcon.id = 'spellbound-indicator-icon';
+    indicatorIcon.style.display = 'none'; // Initially hidden
+    // Structure with image and a placeholder for the count badge
+    indicatorIcon.innerHTML = `
+      <img src="${chrome.runtime.getURL('icons/icon16.png')}" alt="Check Text">
+      <span class="spellbound-indicator-count" style="display: none;"></span>
+    `;
+    indicatorIcon.addEventListener('click', handleIndicatorClick);
+    document.body.appendChild(indicatorIcon);
+  }
+  return indicatorIcon;
+}
+
+// Function to update the indicator icon with a count
+function updateIndicatorIconCount(count) {
+  const icon = getOrCreateIndicatorIcon();
+  if (!icon) return;
+  
+  const countBadge = icon.querySelector('.spellbound-indicator-count');
+  if (!countBadge) return;
+  
+  if (typeof count === 'number' && count > 0) {
+    countBadge.textContent = count > 9 ? '9+' : count.toString(); // Cap at 9+
+    countBadge.style.display = 'flex'; // Show badge
+     // Adjust main icon style slightly if count is shown (optional)
+     icon.classList.add('has-count'); 
+  } else {
+    countBadge.textContent = '';
+    countBadge.style.display = 'none'; // Hide badge if count is 0 or invalid
+    icon.classList.remove('has-count'); 
+  }
+}
+
+// Function to position the indicator icon relative to the target field
+function positionIndicatorIcon(targetField, showImmediately = false) {
+  const icon = getOrCreateIndicatorIcon();
+  if (!targetField || !document.body.contains(targetField)) {
+      hideIndicatorIcon(); 
+      return;
+  }
+  if (!icon) {
+       return;
+  }
+
+  try {
+    const fieldRect = targetField.getBoundingClientRect();
+    // Log the rect specifically when positioning for contenteditable
+    /* // Removed logs
+    if (targetField.isContentEditable) {
+        console.log('[positionIndicatorIcon] Rect for contentEditable target:', JSON.stringify(fieldRect));
+    } else {
+         console.log('[positionIndicatorIcon] Rect for standard input/textarea:', JSON.stringify(fieldRect));
+    }
+    */
+
+    // Basic validation of the rect
+    if ((fieldRect.width === 0 || fieldRect.height === 0) && !targetField.isContentEditable) {
+        console.warn('[positionIndicatorIcon] Target field has zero dimensions and is not contentEditable.');
+        hideIndicatorIcon();
+        return;
+    }
+    if (fieldRect.bottom < 0 || fieldRect.top > window.innerHeight || fieldRect.right < 0 || fieldRect.left > window.innerWidth) {
+        console.warn('[positionIndicatorIcon] Target field bounding rect seems offscreen.');
+        hideIndicatorIcon();
+        return;
+    }
+
+    const scrollX = window.scrollX || window.pageXOffset || 0;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+
+    const iconHeight = 24; 
+    const iconWidth = 24; 
+
+    // Calculate desired absolute position (relative to document)
+    let desiredTop = scrollY + fieldRect.top + (fieldRect.height / 2) - (iconHeight / 2); 
+    let desiredLeft = scrollX + fieldRect.right + 5; 
+
+    // Boundary checks (compare absolute desired position with absolute viewport edges)
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const viewportRightEdge = scrollX + viewportWidth;
+    const viewportBottomEdge = scrollY + viewportHeight;
+
+    if (desiredLeft + iconWidth > viewportRightEdge - 5) { 
+        desiredLeft = scrollX + fieldRect.right - iconWidth - 5; 
+    }
+
+    desiredTop = Math.max(scrollY + 5, desiredTop); 
+    desiredTop = Math.min(viewportBottomEdge - iconHeight - 5, desiredTop);
+    desiredLeft = Math.max(scrollX + 5, desiredLeft); 
+
+    // Apply final position
+    icon.style.top = `${Math.round(desiredTop)}px`;
+    icon.style.left = `${Math.round(desiredLeft)}px`;
+    
+    if (showImmediately) {
+       icon.style.display = 'flex'; 
+    } else {
+       updateIndicatorIconCount(null);
+       icon.style.display = 'flex'; 
+    }
+    
+    indicatorTargetField = targetField; 
+    
+  } catch (e) {
+      console.error("[positionIndicatorIcon] Error during positioning:", e);
+      hideIndicatorIcon();
+  }
+}
+
+// Function to hide the indicator icon
+function hideIndicatorIcon() {
+  if (indicatorIcon) {
+    indicatorIcon.style.display = 'none';
+  }
+  indicatorTargetField = null;
+  clearTimeout(typingTimer);
+  // Clear cache when icon is hidden
+  suggestionCache = { text: null, count: null }; 
+}
+
+// Handler for clicking the indicator icon
+function handleIndicatorClick(event) {
+  event.stopPropagation();
+  if (!indicatorTargetField) return;
+
+  const textToCheck = indicatorTargetField.value;
+  if (!textToCheck || textToCheck.trim().length === 0) {
+    hideIndicatorIcon();
+    return;
+  }
+  
+  console.log('[handleIndicatorClick] Sending text for grammar check:', textToCheck.substring(0, 50) + '...');
+
+  // Send message to background to open popup with grammar tab
+  chrome.runtime.sendMessage({
+    action: 'handleTextSelection',
+    tabType: 'grammar', // Default to grammar check
+    selectedText: textToCheck // Send the full field content
+  }, (response) => {
+    if (chrome.runtime.lastError) {
+      console.error('[handleIndicatorClick] Error sending message:', chrome.runtime.lastError.message);
+    }
+  });
+
+  hideIndicatorIcon();
+}
+
+// Event listener for input events on relevant fields
+function handleFieldInput(event) {
+  // console.log('[handleFieldInput] Input event triggered for element:', event.target); // Removed log
+  const target = event.target;
+  if (!showIndicatorIconEnabled || isMenuDisabledForPage) return; 
+
+  clearTimeout(typingTimer);
+
+  if (indicatorIcon && indicatorIcon.style.display !== 'none') {
+      hideIndicatorIcon(); 
+  }
+  
+  typingTimer = setTimeout(() => {
+    const timerTarget = target; 
+    const currentText = timerTarget.isContentEditable ? timerTarget.textContent : timerTarget.value; 
+    const trimmedText = currentText.trim(); 
+
+    if (trimmedText.length > 5) { 
+       // Update cache regardless of focus state
+       suggestionCache.text = trimmedText; 
+       suggestionCache.count = count; // Assign count here
+
+       chrome.runtime.sendMessage({ action: 'getSuggestionCount', text: trimmedText }, (response) => { 
+         if (chrome.runtime.lastError) {
+           console.warn('[handleFieldInput] Context invalidated before receiving suggestion count:', chrome.runtime.lastError.message);
+           return;
+         }
+         
+         let count = 0; 
+
+         if (response) { 
+            if (response.error) {
+              console.error('[handleFieldInput] Background script error fetching count:', response.error);
+            } else if (typeof response.count === 'number') {
+              count = response.count; 
+            } else {
+              console.warn('[handleFieldInput] Invalid response content received for suggestion count:', response);
+            }
+         } else {
+             console.warn('[handleFieldInput] Null or undefined response received from background script.');
+         }
+         
+         // Update cache regardless of focus state
+         suggestionCache.text = trimmedText; 
+         suggestionCache.count = count; // Assign count again after processing response
+
+         // --- Icon Display Logic --- 
+         if (count > 0) {
+            positionIndicatorIcon(timerTarget, false);
+            updateIndicatorIconCount(count);
+         } else {
+            hideIndicatorIcon(); 
+         }
+       });
+       
+    } else {
+       hideIndicatorIcon();
+    }
+  }, typingDelay);
+}
+
+// Event listener for focus events
+function handleFieldFocus(event) {
+  // Exit early if feature is disabled
+  if (!showIndicatorIconEnabled) return; 
+
+  const target = event.target;
+   clearTimeout(typingTimer); 
+   hideIndicatorIcon(); 
+}
+
+// Event listener for blur events
+function handleFieldBlur(event) {
+   // Exit early if feature is disabled (optional, but good practice)
+   if (!showIndicatorIconEnabled) return; 
+
+  // Use a short delay on blur to allow clicking the icon
+  setTimeout(() => {
+    if (document.activeElement !== indicatorIcon) {
+         hideIndicatorIcon(); 
+    }
+  }, 150);
+}
+
+// Function to check if an element is a relevant input field
+function isRelevantInputField(element) {
+  if (!element) return false;
+  const isEditable = element.isContentEditable || (element.parentNode && element.parentNode.isContentEditable);
+  
+  if (element.tagName === 'TEXTAREA') return true;
+  if (element.tagName === 'INPUT') {
+    const inputType = element.type ? element.type.toLowerCase() : '';
+    const isTextInputType = ['text', 'search', 'url', 'tel', 'email', 'password', ''].includes(inputType);
+    return isTextInputType;
+  }
+  if (isEditable) return true; 
+  return false;
+}
+
+// Add event listeners dynamically using event delegation on document
+document.addEventListener('focusin', (event) => {
+  const isRelevant = isRelevantInputField(event.target);
+  
+  if (isRelevant) {
+    handleFieldFocus(event);
+    // Use different event for contenteditable?
+    const eventNameToListen = event.target.isContentEditable ? 'input' : 'input'; // Stick with input for now, but could be keyup/keydown
+    event.target.addEventListener(eventNameToListen, handleFieldInput); 
+    event.target.addEventListener('blur', handleFieldBlur);
+  }
+});
+
+document.addEventListener('focusout', (event) => {
+   const isRelevant = isRelevantInputField(event.target);
+
+   if (isRelevant) {
+     const eventNameToListen = event.target.isContentEditable ? 'input' : 'input';
+     event.target.removeEventListener(eventNameToListen, handleFieldInput);
+     event.target.removeEventListener('blur', handleFieldBlur);
+     handleFieldBlur(event); 
+   }
 }); 

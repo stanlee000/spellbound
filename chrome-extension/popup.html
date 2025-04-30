@@ -75,6 +75,11 @@
           <div class="description">
             Select a preset or customize how you want to enhance your text:
           </div>
+          <!-- Add Shift+Enter hint here -->
+          <div class="shortcut-hint">
+            Tip: Press Shift+Enter in a context field to apply the preset.
+          </div>
+          
           <div id="enhance-result" class="result-container hidden">
             <div class="loading hidden">
               <div class="spinner"></div>
@@ -89,11 +94,13 @@
                 <span class="material-icons">tag</span>
                 <h3>X (Twitter)</h3>
               </div>
-              <p>Transform your text into an engaging tweet with hashtags.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Additional context" class="context-input" data-context="twitter">
+              <div class="preset-details">
+                <p>Transform your text into an engaging tweet with hashtags.</p>
+                <div class="context-field">
+                  <textarea placeholder="Additional context (optional)" class="context-input" data-context="twitter" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
             </div>
             
             <div class="preset-card" data-preset="linkedin">
@@ -101,11 +108,13 @@
                 <span class="material-icons">work</span>
                 <h3>LinkedIn</h3>
               </div>
-              <p>Enhance your text for professional networking.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Additional context" class="context-input" data-context="linkedin">
+              <div class="preset-details">
+                <p>Enhance your text for professional networking.</p>
+                <div class="context-field">
+                  <textarea placeholder="Additional context (optional)" class="context-input" data-context="linkedin" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
             </div>
             
             <div class="preset-card" data-preset="instagram">
@@ -113,11 +122,13 @@
                 <span class="material-icons">photo_camera</span>
                 <h3>Instagram</h3>
               </div>
-              <p>Create an authentic and engaging post for Instagram.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Add content theme" class="context-input" data-context="instagram">
+              <div class="preset-details">
+                <p>Create an authentic and engaging post for Instagram.</p>
+                <div class="context-field">
+                  <textarea placeholder="Add content theme (optional)" class="context-input" data-context="instagram" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
             </div>
 
             <div class="preset-card" data-preset="hackernews">
@@ -125,11 +136,13 @@
                 <span class="material-icons">code</span>
                 <h3>Hacker News</h3>
               </div>
-              <p>Optimize for technical accuracy and objective analysis.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Add technical focus" class="context-input" data-context="hackernews">
+              <div class="preset-details">
+                <p>Optimize for technical accuracy and objective analysis.</p>
+                <div class="context-field">
+                  <textarea placeholder="Add technical focus (optional)" class="context-input" data-context="hackernews" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
             </div>
             
             <div class="preset-card" data-preset="reddit">
@@ -137,11 +150,13 @@
                 <span class="material-icons">forum</span>
                 <h3>Reddit</h3>
               </div>
-              <p>Format text in a conversational style for Reddit.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Add subreddit context" class="context-input" data-context="reddit">
+              <div class="preset-details">
+                <p>Format text in a conversational style for Reddit.</p>
+                <div class="context-field">
+                  <textarea placeholder="Add subreddit context (optional)" class="context-input" data-context="reddit" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
             </div>
             
             <div class="preset-card" data-preset="promptBuilder">
@@ -149,11 +164,13 @@
                 <span class="material-icons">auto_fix_high</span>
                 <h3>Prompt Builder</h3>
               </div>
-              <p>Structure text as a well-formed LLM prompt.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Add requirements" class="context-input" data-context="promptBuilder">
+              <div class="preset-details">
+                <p>Structure text as a well-formed LLM prompt.</p>
+                <div class="context-field">
+                  <textarea placeholder="Add requirements (optional)" class="context-input" data-context="promptBuilder" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Build Prompt</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Build Prompt</button>
             </div>
             
             <div class="preset-card" data-preset="academic">
@@ -161,11 +178,13 @@
                 <span class="material-icons">school</span>
                 <h3>Academic</h3>
               </div>
-              <p>Formalize your text for academic contexts.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Additional context" class="context-input" data-context="academic">
+              <div class="preset-details">
+                <p>Formalize your text for academic contexts.</p>
+                <div class="context-field">
+                  <textarea placeholder="Additional context (optional)" class="context-input" data-context="academic" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Style</button>
             </div>
             
             <div class="preset-card" data-preset="custom">
@@ -173,12 +192,14 @@
                 <span class="material-icons">edit</span>
                 <h3>Custom</h3>
               </div>
-              <p>Customize tone and style for your specific needs.</p>
-              <div class="context-field">
-                <input type="text" placeholder="Describe tone" class="context-input" data-context="customTone">
-                <input type="text" placeholder="Additional context" class="context-input" data-context="customContext">
+              <div class="preset-details">
+                <p>Customize tone and style for your specific needs.</p>
+                <div class="context-field">
+                  <textarea placeholder="Describe tone" class="context-input" data-context="customTone" rows="1"></textarea>
+                  <textarea placeholder="Additional context (optional)" class="context-input" data-context="customContext" rows="1"></textarea>
+                </div>
+                <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Custom Style</button>
               </div>
-              <button class="preset-apply-button primary-button" data-action="apply-preset">Apply Custom Style</button>
             </div>
           </div>
           
@@ -245,11 +266,21 @@
             </select>
             <p class="setting-description">Choose a default language for translations. This will be pre-selected when you open the translate tab.</p>
           </div>
+
+          <!-- New Setting: Indicator Icon Toggle -->
+          <div class="setting-group indicator-setting">
+            <label for="indicatorIconToggle">Show Suggestions Icon (Beta)</label>
+            <div class="toggle-switch">
+              <input type="checkbox" id="indicatorIconToggle">
+              <label for="indicatorIconToggle" class="toggle-label"></label>
+            </div>
+            <p class="setting-description">Show a quick-check icon next to text fields after you pause typing with numbers of suggestions & corrections. Requires page reload after changing.</p>
+          </div>
           
           <!-- Add a container for dialog actions -->
           <div class="dialog-actions">
-            <button type="button" class="secondary-button close-dialog">Cancel</button>
-            <button id="updateSettings" class="primary-button">Save Settings</button>
+            <button id="saveSettingsButton" class="primary-button">Save Settings</button>
+            <button id="cancelSettingsButton" class="secondary-button">Cancel</button>
           </div>
         </div>
       </div>
