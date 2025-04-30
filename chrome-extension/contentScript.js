@@ -216,111 +216,184 @@ function showFeedback(message) {
   }, 2000);
 }
 
-// Calculate optimal position for the floating menu
-function calculateMenuPosition(selection) {
+// Calculate optimal position for the floating menu based on selection range or input element
+function calculateMenuPosition(target) {
   try {
-    if (!selection || selection.rangeCount === 0) {
-        console.warn('[calculateMenuPosition] Invalid selection or no range.');
-        // Return safe fallback position
-        return { posX: (window.innerWidth / 2) - (360 / 2), posY: 100 };
+    let rect;
+    let targetIsInput = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+
+    if (target instanceof Selection) {
+      if (!target || target.rangeCount === 0 || target.isCollapsed) {
+        console.warn('[calculateMenuPosition] Invalid Selection object.');
+        return { posX: (window.innerWidth / 2) - (180), posY: 100 }; // Centered fallback
+      }
+      const range = target.getRangeAt(0);
+      rect = range.getBoundingClientRect();
+    } else if (targetIsInput) {
+       rect = target.getBoundingClientRect();
+    } else {
+        console.warn('[calculateMenuPosition] Invalid target type.');
+        return { posX: (window.innerWidth / 2) - (180), posY: 100 }; // Centered fallback
     }
-    const range = selection.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
+
+    if (!rect || (rect.width === 0 && rect.height === 0)) {
+        console.warn('[calculateMenuPosition] Could not get valid bounding rect.');
+        // Fallback to positioning relative to the element itself if possible
+         if (targetIsInput) {
+             rect = target.getBoundingClientRect(); // Try again for input
+         } else {
+            // Try to get element from selection if possible, otherwise fallback
+            try {
+                const range = target.getRangeAt(0);
+                const parentElement = range.commonAncestorContainer.parentElement || document.body;
+                rect = parentElement.getBoundingClientRect();
+            } catch (e) {
+                console.error("Error getting fallback rect from selection parent:", e)
+                return { posX: (window.innerWidth / 2) - (180), posY: 100 };
+            }
+         }
+         // If still no valid rect after fallbacks
+         if (!rect || (rect.width === 0 && rect.height === 0)) {
+             return { posX: (window.innerWidth / 2) - (180), posY: 100 };
+         }
+    }
     
-    const menuWidth = 360; // Reduced width for smaller buttons (was 450)
-    const menuHeight = 32; // Reduced height to match CSS (was 40)
+    const menuWidth = 360; 
+    const menuHeight = 32; 
     
-    // Get viewport dimensions safely
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 0;
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 0;
     
-    // Safe scrolling values
     const scrollX = window.scrollX || window.pageXOffset || 0;
     const scrollY = window.scrollY || window.pageYOffset || 0;
     
-    // Default position (above selection, centered)
+    // Default position (above selection/element, centered)
     let posX = scrollX + rect.left + (rect.width / 2) - (menuWidth / 2);
-    let posY = scrollY + rect.top - menuHeight - 10;
+    let posY = scrollY + rect.top - menuHeight - 10; // 10px buffer above
     
     // Adjust if off screen horizontally
     if (posX < scrollX) {
       posX = scrollX + 10;
     } else if (posX + menuWidth > scrollX + viewportWidth) {
-      // Avoid potential extension context issues by simplifying the calculation
       posX = Math.max(scrollX, scrollX + viewportWidth - menuWidth - 10);
     }
     
     // If not enough space above, position below
-    if (posY < scrollY) {
-      posY = scrollY + rect.bottom + 10;
+    // Also position below if the target is an input field for better UX
+    if (posY < scrollY || targetIsInput) {
+      posY = scrollY + rect.bottom + 10; // 10px buffer below
+      // Ensure it doesn't go off bottom of screen when positioned below
+      if (posY + menuHeight > scrollY + viewportHeight) {
+          posY = scrollY + viewportHeight - menuHeight - 10; // Place just above bottom edge
+          // If really constrained, place it back above if possible
+           if (posY < scrollY + rect.top) {
+               posY = scrollY + rect.top - menuHeight - 10;
+           }
+      }
     }
     
-    return { posX, posY };
+    // Final boundary check
+    posX = Math.max(scrollX + 5, posX);
+    posY = Math.max(scrollY + 5, posY);
+
+
+    return { posX: Math.round(posX), posY: Math.round(posY) };
   } catch (error) {
     console.error('Error calculating menu position:', error);
-    // Return safe fallback position
+    // Return safe fallback position (center top)
     return { 
-      posX: (window.innerWidth / 2) - (360 / 2),
+      posX: Math.round((window.innerWidth / 2) - (180)),
       posY: 100 
     };
   }
 }
 
-// Show floating menu near the selected text
-function showFloatingMenu() {
+// Show floating menu near the selected text or within an input field
+// targetElement is the element that received the mouseup event, if available
+function showFloatingMenu(targetElement = null) { 
   try {
-    chrome.storage.local.get(['menuDisabledGlobally', 'disabledDomains', 'menuSettings'], (result) => {
-      try {
-        if (chrome.runtime.lastError) {
-            console.error('[showFloatingMenu] Error getting storage:', chrome.runtime.lastError.message);
-            return;
-        }
-
-        // Check global disable first
-        const globallyDisabled = (result.menuSettings && result.menuSettings.globallyDisabled);
-        if (globallyDisabled) return;
-
-        // Check site-specific disable
-        const disabledPages = (result.menuSettings && result.menuSettings.disabledPages) ? result.menuSettings.disabledPages : [];
-        const currentHostname = window.location.hostname;
-        if (disabledPages.includes(currentHostname)) {
-            isMenuDisabledForPage = true; // Ensure local state matches storage
-            return;
-        } else {
-            isMenuDisabledForPage = false; // Ensure local state is correct
-        }
-
-        clearTimeout(selectionTimeout);
-        selectionTimeout = setTimeout(() => {
+    // Debounce the call slightly to avoid flicker on rapid selections/clicks
+    clearTimeout(selectionTimeout);
+    selectionTimeout = setTimeout(() => {
+        chrome.storage.local.get(['menuSettings'], (result) => {
           try {
-            const selection = window.getSelection();
-            if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-                selectedText = '';
-                if (floatingMenu) hideFloatingMenu();
+            if (chrome.runtime.lastError) {
+                console.error('[showFloatingMenu] Error getting storage:', chrome.runtime.lastError.message);
                 return;
             }
+
+            // Check if globally disabled
+            const globallyDisabled = (result.menuSettings && result.menuSettings.globallyDisabled);
+            if (globallyDisabled) return;
+
+            // Check if disabled for this site
+            const disabledPages = (result.menuSettings && result.menuSettings.disabledPages) ? result.menuSettings.disabledPages : [];
+            const currentHostname = window.location.hostname;
+            const siteDisabled = disabledPages.includes(currentHostname);
+            if (siteDisabled) {
+                isMenuDisabledForPage = true;
+                return;
+            } else {
+                isMenuDisabledForPage = false;
+            }
             
-            const currentTrimmedText = selection.toString().trim();
-            if (currentTrimmedText.length > 10) {
-              selectedText = currentTrimmedText;
+            let potentialTarget = targetElement || document.activeElement;
+            let selectionSource = null; // Will be 'input' or 'window'
+            let currentTrimmedText = '';
+            let positionTarget = null; // Will be the element or selection object
+
+            // --- Check for selection in input/textarea first ---
+            if (potentialTarget instanceof HTMLInputElement || potentialTarget instanceof HTMLTextAreaElement) {
+                // Check common text input types
+                 const inputType = potentialTarget.type ? potentialTarget.type.toLowerCase() : '';
+                 const isTextInput = potentialTarget.tagName === 'TEXTAREA' || 
+                                     (potentialTarget.tagName === 'INPUT' && 
+                                      ['text', 'search', 'url', 'tel', 'email', 'password', ''].includes(inputType)); // Include '' for default type=text
+
+                if (isTextInput && typeof potentialTarget.selectionStart === 'number' && potentialTarget.selectionStart !== potentialTarget.selectionEnd) {
+                    currentTrimmedText = potentialTarget.value.substring(potentialTarget.selectionStart, potentialTarget.selectionEnd).trim();
+                    if (currentTrimmedText.length > 0) { // Allow menu for any length in inputs for now
+                         selectionSource = 'input';
+                         positionTarget = potentialTarget; // Position relative to the input element
+                    }
+                }
+            }
+
+            // --- If no input selection, check window selection ---
+            if (!selectionSource) {
+                const selection = window.getSelection();
+                if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+                    currentTrimmedText = selection.toString().trim();
+                     if (currentTrimmedText.length > 10) { // Keep minimum length for window selection
+                        selectionSource = 'window';
+                        positionTarget = selection; // Position relative to the selection range
+                    }
+                }
+            }
+
+            // --- Show or hide menu based on findings ---
+            if (selectionSource && currentTrimmedText.length > 0 && positionTarget) { // Require some text
+              selectedText = currentTrimmedText; // Store the selected text globally
               
-              // Ensure menu is created *before* calculating position
-              if (!floatingMenu) {
+              // Create menu if it doesn't exist
+              if (!floatingMenu || !document.body.contains(floatingMenu)) {
                 createFloatingMenu(); 
               }
               
-              // Check again if creation failed or menu doesn't exist
               if (!floatingMenu) {
                 console.error('[showFloatingMenu] floatingMenu is null even after trying to create it!');
                 return; 
               }
 
-              const { posX, posY } = calculateMenuPosition(selection);
+              const { posX, posY } = calculateMenuPosition(positionTarget); // Pass the correct target
                             
               floatingMenu.style.left = `${posX}px`;
               floatingMenu.style.top = `${posY}px`;
               floatingMenu.style.display = 'flex';
               
+              // Add appear animation (ensure class is removed first if reappearing quickly)
+              floatingMenu.classList.remove('spellbound-menu-appear');
+              void floatingMenu.offsetWidth; // Trigger reflow to restart animation
               floatingMenu.classList.add('spellbound-menu-appear');
               setTimeout(() => {
                 if (floatingMenu) {
@@ -329,35 +402,32 @@ function showFloatingMenu() {
               }, 300);
 
             } else {
+              // No valid selection found, or text too short (for window selection)
               selectedText = ''; 
               if (floatingMenu) {
                  hideFloatingMenu();
               }
             }
           } catch (error) {
-            console.error('[showFloatingMenu] Error in selection handling timeout:', error);
-            selectedText = ''; // Clear on error
-            if (floatingMenu) hideFloatingMenu(); // Hide menu on error
+             if (error.message && error.message.includes('Extension context invalidated')) {
+                console.warn('Context invalidated during storage/selection handling, likely page navigation or closure.');
+             } else {
+                console.error('[showFloatingMenu] Error in selection/storage handling:', error);
+             }
+             selectedText = ''; // Clear on error
+             if (floatingMenu) hideFloatingMenu(); // Hide menu on error
           }
-        }, 200);
-      } catch (error) {
-        // Check for context invalidated error here too
-        if (error.message && error.message.includes('Extension context invalidated')) {
-            console.warn('Context invalidated during storage callback, likely popup closed.');
-        } else {
-            console.error('Error in chrome.storage callback:', error);
-        }
-        selectedText = ''; // Clear on error regardless
-      }
-    });
+        });
+    }, 50); // Short delay (50ms) for debounce
   } catch (error) {
-    // Ignore context invalidated errors, as they are expected if the popup closes.
+    // Catch top-level errors (less likely now with inner try/catch)
     if (error.message && error.message.includes('Extension context invalidated')) {
-        console.warn('[showFloatingMenu] Context invalidated, likely popup closed.');
+        console.warn('[showFloatingMenu] Top-level context invalidated.');
     } else {
         console.error('[showFloatingMenu] Top-level error:', error);
     }
-    selectedText = ''; // Clear on error regardless
+    selectedText = ''; 
+    if (floatingMenu) hideFloatingMenu();
   }
 }
 
@@ -375,7 +445,8 @@ document.addEventListener('mouseup', (event) => {
         if (floatingMenu && floatingMenu.contains(event.target)) {
             return;
         }
-        showFloatingMenu();
+        // Pass the event target to potentially identify input selections
+        showFloatingMenu(event.target); 
     } catch (error) {
         console.error('[mouseup listener] Error:', error);
     }
@@ -384,7 +455,21 @@ document.addEventListener('mouseup', (event) => {
 document.addEventListener('selectionchange', () => {
   try {
     const selection = window.getSelection();
-    if (!isMouseOverMenu && selection && selection.toString().trim().length === 0 && floatingMenu && floatingMenu.style.display !== 'none') {
+    const activeElement = document.activeElement;
+    
+    // Hide menu if:
+    // 1. Not hovering over the menu AND
+    // 2. Window selection is empty/collapsed AND
+    // 3. EITHER the active element is NOT an input/textarea OR it IS but has no selection within it
+    // 4. AND the menu is currently visible
+    const inputHasSelection = (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) && 
+                              activeElement.selectionStart !== activeElement.selectionEnd;
+                              
+    if (!isMouseOverMenu && 
+        (!selection || selection.isCollapsed) &&
+        !inputHasSelection &&
+        floatingMenu && floatingMenu.style.display !== 'none') 
+    {
       hideFloatingMenu();
     }
   } catch (error) {
