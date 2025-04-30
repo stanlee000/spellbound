@@ -720,16 +720,28 @@ function hideIndicatorIcon() {
 
 // Handler for clicking the indicator icon
 function handleIndicatorClick(event) {
+  // console.log('[handleIndicatorClick] Icon clicked.'); // Removed log
   event.stopPropagation();
-  if (!indicatorTargetField) return;
+  if (!indicatorTargetField) {
+      // console.warn('[handleIndicatorClick] No target field stored!'); // Removed log
+      return;
+  }
+  // console.log('[handleIndicatorClick] Target field:', indicatorTargetField); // Removed log
 
-  const textToCheck = indicatorTargetField.value;
+  // Adjust text retrieval for contenteditable
+  const textToCheck = indicatorTargetField.isContentEditable 
+                      ? indicatorTargetField.textContent 
+                      : indicatorTargetField.value;
+                      
+  // console.log(`[handleIndicatorClick] Text to check (length ${textToCheck?.length}):`, textToCheck?.substring(0, 100) + '...'); // Removed log
+
   if (!textToCheck || textToCheck.trim().length === 0) {
+    // console.warn('[handleIndicatorClick] Target field is empty.'); // Removed log
     hideIndicatorIcon();
     return;
   }
   
-  console.log('[handleIndicatorClick] Sending text for grammar check:', textToCheck.substring(0, 50) + '...');
+  // console.log('[handleIndicatorClick] Sending handleTextSelection message to background...'); // Removed log
 
   // Send message to background to open popup with grammar tab
   chrome.runtime.sendMessage({
@@ -737,9 +749,13 @@ function handleIndicatorClick(event) {
     tabType: 'grammar', // Default to grammar check
     selectedText: textToCheck // Send the full field content
   }, (response) => {
+    // Log response or error from background
     if (chrome.runtime.lastError) {
+      // Keep error log, but remove success log
       console.error('[handleIndicatorClick] Error sending message:', chrome.runtime.lastError.message);
-    }
+    } /* else {
+        // console.log('[handleIndicatorClick] Received response from background:', response); // Removed log
+    } */
   });
 
   hideIndicatorIcon();
