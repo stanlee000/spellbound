@@ -123,9 +123,18 @@ body {
 }
 
 .description {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+/* Style for the shortcut hint */
+.shortcut-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-align: center;
+  opacity: 0.8;
 }
 
 /* Result Container (mimics MUI Paper) */
@@ -249,94 +258,108 @@ body {
 /* Presets Grid (Mimic EnhanceTab.js) */
 .presets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+  /* grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); */ /* Old auto-fill */
+  grid-template-columns: repeat(2, 1fr); /* Set exactly 4 columns */
+  gap: 10px; /* Slightly reduce gap for tighter fit */
+  padding: 12px;
 }
 
 .preset-card {
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 16px;
+  padding: 10px 12px; /* Slightly reduced padding for compact view */
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
+  transition: all 0.3s ease; /* Transition all properties */
+  overflow: hidden; /* Hide overflowing content */
+  display: flex; /* Use flex for better control */
+  flex-direction: column; /* Stack header and details vertically */
 }
 
 .preset-card:hover {
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 2px 6px var(--shadow-color);
-}
-
-.preset-card.selected {
-  border-color: var(--text-primary); /* Dark border when selected */
-  box-shadow: 0 0 0 1px var(--text-primary), 0 2px 6px var(--shadow-color); /* Dark ring */
+  border-color: var(--text-primary);
+  /* Optional: Add slight elevation on hover */
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
 }
 
 .preset-header {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
   gap: 8px;
+  /* Removed margin-bottom, spacing handled by details reveal */
 }
 
-.preset-header .material-icons {
-  color: var(--text-secondary); /* Grey icons */
-  font-size: 20px;
-}
-
-.preset-card.selected .preset-header .material-icons {
-    color: var(--text-primary); /* Dark icon when selected */
-}
-
-.preset-card.selected h3 {
-    color: var(--text-primary); /* Dark title when selected */
-}
-
-.preset-card h3 {
+.preset-header h3 {
+  margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0;
 }
 
-.preset-card p {
-  font-size: 13px;
+.preset-header .material-icons {
+  font-size: 18px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
-  flex-grow: 1;
-  min-height: 40px;
+}
+
+/* Styles for the hidden details section */
+.preset-details {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  /* Use ease-in-out for smoother transition */
+  transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out, margin-top 0.3s ease-in-out, visibility 0s 0.3s;
+  margin-top: 0;
+}
+
+/* Show details on card hover */
+.preset-card:hover .preset-details {
+  opacity: 1;
+  max-height: 400px; 
+  visibility: visible;
+  margin-top: 10px; 
+  /* Also update transition delay here */
+  transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out, margin-top 0.3s ease-in-out, visibility 0s 0s;
+}
+
+.preset-details p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  line-height: 1.4;
 }
 
 .context-field {
-  margin-top: auto;
+  margin-bottom: 10px;
 }
 
+/* Style both input and textarea context fields */
 .context-input {
   width: 100%;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 6px 8px;
   border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 12px;
   background-color: var(--background-light);
-  outline: none;
-  font-size: 13px;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-  margin-top: 8px;
-}
-.context-input:first-of-type {
-    margin-top: 0;
+  color: var(--text-primary);
+  margin-top: 4px; /* Add some space between multiple fields */
+  box-sizing: border-box; /* Include padding and border in width */
 }
 
-.context-input:focus {
-  border-color: var(--text-primary);
-  background-color: white;
+/* Specific styles for the textarea context fields */
+textarea.context-input {
+  resize: vertical; /* Allow vertical resizing */
+  min-height: 30px; /* Roughly match single input height */
+  line-height: 1.4; /* Improve readability */
+  font-family: inherit; /* Ensure consistent font */
+  overflow-y: auto; /* Add scrollbar if needed */
 }
 
 .preset-apply-button {
-    margin-top: 12px; /* Add space above the button */
-    width: 100%; /* Make button full width of card padding */
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-top: auto; /* Push button to bottom if card heights vary */
 }
 
 /* Language Chips (Mimic TranslateTab.js) */
