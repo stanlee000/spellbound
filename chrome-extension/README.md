@@ -16,7 +16,7 @@
 *   **✨ Floating action menu**: Highlight any text, and a menu pops up instantly for lightning-fast actions
 *   **⌨️ Shortcut first**
 *   **📝 Grammar & style check**:
-    *   Spot spelling, grammar & style slip-ups
+    *   Spot spelling, grammar & style slip-ups right where you type
     *   Hover for language-specific tips & explanations
     *   Click to toggle fixes one by one
     *   Multilingual & always ready—no limits
@@ -46,6 +46,14 @@
       </td>
       <td align="center">
         <img src="https://github.com/user-attachments/assets/6c4466cd-3d7e-4889-9e9b-bf2546986031" alt="Spellbound grammar fixing" width="400">
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="https://github.com/user-attachments/assets/cef9c03f-2843-4804-a80b-e088ee55650a" alt="Spellbound chrome floating actions counter" width="400">
+      </td>
+      <td align="center">
+        <img src="https://github.com/user-attachments/assets/02e23b6d-fa4c-4180-81c4-0562934224fb" alt="Spellbound grammar fixing showcase 2" width="400">
       </td>
     </tr>
     <tr>
