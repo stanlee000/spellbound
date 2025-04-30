@@ -25,9 +25,13 @@ function createFloatingMenu() {
   if (floatingMenu) {
     try {
       floatingMenu.removeEventListener('mouseup', handleMenuClick); 
-      document.body.removeChild(floatingMenu);
+      if (document.body.contains(floatingMenu)) {
+          document.body.removeChild(floatingMenu);
+      }
       floatingMenu = null; // Ensure it's nullified
     } catch (e) {
+      console.error('[createFloatingMenu] Error removing existing menu:', e);
+      floatingMenu = null; // Ensure nullified even on error
     }
   }
   
@@ -147,6 +151,11 @@ function handleTextProcessingAction(action) {
 function disableForCurrentPage() {
   const currentUrl = window.location.hostname;
   chrome.storage.local.get(['menuSettings'], (result) => {
+    if (chrome.runtime.lastError) {
+      console.error('[disableForCurrentPage] Error getting menuSettings:', chrome.runtime.lastError.message);
+      return;
+    }
+
     const menuSettings = result.menuSettings || { disabledPages: [] };
     
     if (!menuSettings.disabledPages) {
@@ -158,9 +167,14 @@ function disableForCurrentPage() {
     }
     
     chrome.storage.local.set({ menuSettings }, () => {
-      isMenuDisabledForPage = true;
-      hideFloatingMenu();
-      showFeedback('Menu disabled for ' + currentUrl);
+      if (chrome.runtime.lastError) {
+        console.error('[disableForCurrentPage] Error setting menuSettings:', chrome.runtime.lastError.message);
+        showFeedback('Error saving setting');
+      } else {
+        isMenuDisabledForPage = true;
+        hideFloatingMenu();
+        showFeedback('Menu disabled for ' + currentUrl);
+      }
     });
   });
 }
@@ -168,13 +182,22 @@ function disableForCurrentPage() {
 // Disable the floating menu globally
 function disableGlobally() {
   chrome.storage.local.get(['menuSettings'], (result) => {
+    if (chrome.runtime.lastError) {
+      console.error('[disableGlobally] Error getting menuSettings:', chrome.runtime.lastError.message);
+      return;
+    }
     const menuSettings = result.menuSettings || {};
     menuSettings.globallyDisabled = true;
     
     chrome.storage.local.set({ menuSettings }, () => {
-      isMenuDisabledForPage = true;
-      hideFloatingMenu();
-      showFeedback('Menu disabled globally');
+      if (chrome.runtime.lastError) {
+        console.error('[disableGlobally] Error setting menuSettings:', chrome.runtime.lastError.message);
+        showFeedback('Error saving setting');
+      } else {
+        isMenuDisabledForPage = true;
+        hideFloatingMenu();
+        showFeedback('Menu disabled globally');
+      }
     });
   });
 }
@@ -196,6 +219,11 @@ function showFeedback(message) {
 // Calculate optimal position for the floating menu
 function calculateMenuPosition(selection) {
   try {
+    if (!selection || selection.rangeCount === 0) {
+        console.warn('[calculateMenuPosition] Invalid selection or no range.');
+        // Return safe fallback position
+        return { posX: (window.innerWidth / 2) - (360 / 2), posY: 100 };
+    }
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     
@@ -241,32 +269,54 @@ function calculateMenuPosition(selection) {
 // Show floating menu near the selected text
 function showFloatingMenu() {
   try {
-    chrome.storage.local.get(['menuDisabledGlobally', 'disabledDomains'], (result) => {
+    chrome.storage.local.get(['menuDisabledGlobally', 'disabledDomains', 'menuSettings'], (result) => {
       try {
-        if (result.menuDisabledGlobally) return;
-        const disabledDomains = result.disabledDomains || [];
-        const currentDomain = window.location.hostname;
-        if (disabledDomains.includes(currentDomain)) return;
-        if (isMenuDisabledForPage) return;
+        if (chrome.runtime.lastError) {
+            console.error('[showFloatingMenu] Error getting storage:', chrome.runtime.lastError.message);
+            return;
+        }
+
+        // Check global disable first
+        const globallyDisabled = (result.menuSettings && result.menuSettings.globallyDisabled);
+        if (globallyDisabled) return;
+
+        // Check site-specific disable
+        const disabledPages = (result.menuSettings && result.menuSettings.disabledPages) ? result.menuSettings.disabledPages : [];
+        const currentHostname = window.location.hostname;
+        if (disabledPages.includes(currentHostname)) {
+            isMenuDisabledForPage = true; // Ensure local state matches storage
+            return;
+        } else {
+            isMenuDisabledForPage = false; // Ensure local state is correct
+        }
 
         clearTimeout(selectionTimeout);
         selectionTimeout = setTimeout(() => {
           try {
             const selection = window.getSelection();
-            if (!selection) return;
+            if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+                selectedText = '';
+                if (floatingMenu) hideFloatingMenu();
+                return;
+            }
             
             const currentTrimmedText = selection.toString().trim();
             if (currentTrimmedText.length > 10) {
               selectedText = currentTrimmedText;
-              createFloatingMenu();
               
-              const { posX, posY } = calculateMenuPosition(selection);
-              
+              // Ensure menu is created *before* calculating position
               if (!floatingMenu) {
-                console.error('[showFloatingMenu] floatingMenu is null after creation!');
-                return;
+                createFloatingMenu(); 
               }
               
+              // Check again if creation failed or menu doesn't exist
+              if (!floatingMenu) {
+                console.error('[showFloatingMenu] floatingMenu is null even after trying to create it!');
+                return; 
+              }
+
+              const { posX, posY } = calculateMenuPosition(selection);
+                            
               floatingMenu.style.left = `${posX}px`;
               floatingMenu.style.top = `${posY}px`;
               floatingMenu.style.display = 'flex';
@@ -287,6 +337,7 @@ function showFloatingMenu() {
           } catch (error) {
             console.error('[showFloatingMenu] Error in selection handling timeout:', error);
             selectedText = ''; // Clear on error
+            if (floatingMenu) hideFloatingMenu(); // Hide menu on error
           }
         }, 200);
       } catch (error) {
@@ -318,51 +369,100 @@ function hideFloatingMenu() {
 }
 
 // Initialize events
-document.addEventListener('mouseup', showFloatingMenu);
-document.addEventListener('selectionchange', () => {
-  const selection = window.getSelection();
-  if (!isMouseOverMenu && selection && selection.toString().trim().length === 0 && floatingMenu) {
-    hideFloatingMenu();
-  }
-});
-document.addEventListener('click', (e) => {
-  if (floatingMenu && !floatingMenu.contains(e.target)) {
-    hideFloatingMenu();
-    const dropdown = floatingMenu.querySelector('.spellbound-dropdown.active');
-    if (dropdown) {
-      dropdown.classList.remove('active');
+document.addEventListener('mouseup', (event) => {
+    try {
+        // Prevent triggering if clicking inside the menu itself
+        if (floatingMenu && floatingMenu.contains(event.target)) {
+            return;
+        }
+        showFloatingMenu();
+    } catch (error) {
+        console.error('[mouseup listener] Error:', error);
     }
+});
+
+document.addEventListener('selectionchange', () => {
+  try {
+    const selection = window.getSelection();
+    if (!isMouseOverMenu && selection && selection.toString().trim().length === 0 && floatingMenu && floatingMenu.style.display !== 'none') {
+      hideFloatingMenu();
+    }
+  } catch (error) {
+      console.error('[selectionchange listener] Error:', error);
   }
 });
+
+document.addEventListener('click', (e) => {
+  try {
+    if (floatingMenu && floatingMenu.style.display !== 'none' && !floatingMenu.contains(e.target)) {
+      hideFloatingMenu();
+      const dropdown = floatingMenu.querySelector('.spellbound-dropdown.active');
+      if (dropdown) {
+        dropdown.classList.remove('active');
+      }
+    }
+  } catch (error) {
+      console.error('[click listener] Error:', error);
+  }
+});
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && floatingMenu) {
-    hideFloatingMenu();
+  try {
+    if (e.key === 'Escape' && floatingMenu && floatingMenu.style.display !== 'none') {
+      hideFloatingMenu();
+    }
+  } catch (error) {
+      console.error('[keydown listener] Error:', error);
   }
 });
 
 // Handle messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'processText') {
-    // Store the selected text in local storage for the popup
-    chrome.storage.local.set({ 
-      selectedText: message.text,
-      activeTab: message.tabType
-    });
-    
-    sendResponse({ success: true });
-  } else if (message.action === 'updateMenuSettings') {
-    // Update menu settings from popup
-    chrome.storage.local.get(['menuSettings'], (result) => {
-      if (result.menuSettings && result.menuSettings.globallyDisabled) {
-        isMenuDisabledForPage = true;
-      } else {
-        const currentUrl = window.location.hostname;
-        isMenuDisabledForPage = result.menuSettings && 
-                               result.menuSettings.disabledPages && 
-                               result.menuSettings.disabledPages.includes(currentUrl);
+  try {
+    if (message.action === 'processText') {
+      // Store the selected text in local storage for the popup
+      chrome.storage.local.set({ 
+        selectedText: message.text,
+        activeTab: message.tabType
+      }, () => {
+         if (chrome.runtime.lastError) {
+            console.error('[onMessage processText] Error setting storage:', chrome.runtime.lastError.message);
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+         } else {
+            sendResponse({ success: true });
+         }
+      });
+      return true; // Indicate asynchronous response
+    } else if (message.action === 'updateMenuSettings') {
+      // Update menu settings from popup/options
+      chrome.storage.local.get(['menuSettings'], (result) => {
+        if (chrome.runtime.lastError) {
+            console.error('[onMessage updateMenuSettings] Error getting storage:', chrome.runtime.lastError.message);
+             sendResponse({ success: false, error: chrome.runtime.lastError.message });
+            return; // Exit early on error
+        }
+
+        if (result.menuSettings && result.menuSettings.globallyDisabled) {
+          isMenuDisabledForPage = true;
+        } else {
+          const currentUrl = window.location.hostname;
+          isMenuDisabledForPage = result.menuSettings && 
+                                 result.menuSettings.disabledPages && 
+                                 result.menuSettings.disabledPages.includes(currentUrl);
+        }
+         sendResponse({ success: true }); // Respond after processing
+      });
+      return true; // Indicate asynchronous response
+    }
+  } catch (error) {
+      console.error('[onMessage listener] General error:', error);
+      // Attempt to send an error response if possible
+      try {
+          sendResponse({ success: false, error: error.message });
+      } catch (e) {
+          // Ignore errors trying to send response if channel closed etc.
       }
-    });
-    
-    sendResponse({ success: true });
   }
+  // Return false if not sending an async response
+  return false; 
 }); 
