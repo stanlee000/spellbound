@@ -763,9 +763,19 @@ function handleFieldInput(event) {
     const trimmedText = currentText.trim(); 
 
     if (trimmedText.length > 5) { 
-       // Update cache regardless of focus state
-       suggestionCache.text = trimmedText; 
-       suggestionCache.count = count; // Assign count here
+       // --- Check Cache --- 
+       if (suggestionCache.text === trimmedText && suggestionCache.count !== null) { 
+           if (suggestionCache.count > 0) { 
+               positionIndicatorIcon(timerTarget, false);
+               updateIndicatorIconCount(suggestionCache.count); 
+           } else {
+               hideIndicatorIcon(); 
+           }
+           return; 
+       }
+       
+       // --- Cache Miss ---
+       updateIndicatorIconCount(null); // Reset icon appearance
 
        chrome.runtime.sendMessage({ action: 'getSuggestionCount', text: trimmedText }, (response) => { 
          if (chrome.runtime.lastError) {
@@ -787,9 +797,9 @@ function handleFieldInput(event) {
              console.warn('[handleFieldInput] Null or undefined response received from background script.');
          }
          
-         // Update cache regardless of focus state
+         // Correct cache update is here:
          suggestionCache.text = trimmedText; 
-         suggestionCache.count = count; // Assign count again after processing response
+         suggestionCache.count = count; 
 
          // --- Icon Display Logic --- 
          if (count > 0) {
