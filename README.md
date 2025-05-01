@@ -32,7 +32,7 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
   - ✍️ Custom tones  
 - **Cross-Platform:** Runs on Mac, Windows, and Linux. Browser extensions available for:
   - [Google Chrome extension](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
-  - [Safari extension](https://github.com/stanlee000/spellbound/tree/main/safari-extension) (macOS only)
+  - [Safari extension](https://github.com/stanlee000/spellbound/tree/main/safari-extension)
 - **Privacy-First:** Your API key never leaves your device
 - **Custom keyboard shortcuts for your style**
 - **Language Detection**
