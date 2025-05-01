@@ -12,7 +12,7 @@
 
 As someone who didn't grow up speaking English, writing for work and social media used to mean bouncing between grammar checkers, style tools, and translation apps (Grammarly, Hemingway, Google Translate). It was a mess and slowed me down, especially in today's fast-paced, multinational world where you constantly need to live in different countries and switch languages.
 
-One day, after yet another round of app-switching, I thought, "Why isn't there one tool that just does it all?" That’s why I built Spellbound—a simple app that sits in your tray and helps with grammar, style, and translations in seconds. Just highlight & copy your text, hit ```Cmd+Shift+C```, and you’re set.
+One day, after yet another round of app-switching, I thought, "Why isn't there one tool that just does it all?" That's why I built Spellbound—a simple app that sits in your tray and helps with grammar, style, and translations in seconds. Just highlight & copy your text, hit ```Cmd+Shift+C```, and you're set.
 
 It started as my personal fix, but now I'm excited to share it with anyone who wants to write better and faster, no matter what language you're working in. And yep, I used Spellbound to write this :)
 
@@ -30,7 +30,9 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
   - 🎯 Reddit
   - 🪄 AI prompts builder
   - ✍️ Custom tones  
-- **Cross-Platform:** Runs on Mac, Windows, and Linux. For Google Chrome extension check it our [here](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+- **Cross-Platform:** Runs on Mac, Windows, and Linux. Browser extensions available for:
+  - [Google Chrome extension](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+  - [Safari extension](https://github.com/stanlee000/spellbound/tree/main/safari-extension) (macOS only)
 - **Privacy-First:** Your API key never leaves your device
 - **Custom keyboard shortcuts for your style**
 - **Language Detection**
@@ -72,6 +74,10 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
    - Need a translation? Just use ```Cmd+Shift+T (Mac)``` or ```Ctrl+Shift+T (Windows/Linux)```
    - Watch your writing transform!
 
+3. **Browser Extensions**
+   - **Chrome:** Install from the [Chrome extension folder](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+   - **Safari:** Build and install from the [Safari extension folder](https://github.com/stanlee000/spellbound/tree/main/safari-extension) (requires Xcode)
+
 ## 💡 Pro Moves
 
 - Use the tray icon for lightning-fast settings access
@@ -86,12 +92,14 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
 - **OS**: macOS 10.13+, Windows 10+, or Linux
 - **Storage**: 200MB free space
 - **Internet**: Required for API connectivity
+- **Safari Extension**: macOS 11+ and Xcode 12+ (for building)
 
 #### Built With
 - Electron
 - OpenAI API
 - React
 - Material-UI
+- Safari Web Extensions (for Safari version)
 
 
 ## 🔒 Privacy & Security
@@ -136,7 +144,10 @@ Having issues? Check out our [Issues](../../issues) page or create a new issue.
 
 ## 🗺 What's Next?
 - **📱 Mobile App:** Take Spellbound anywhere, anytime!
-- **🌐 Browser Extension:** Magic on your favorite sites. [Google Chrome extension](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+- **🌐 Browser Extensions:** 
+  - ✅ Google Chrome extension - [Available now](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+  - ✅ Safari extension - [Available now](https://github.com/stanlee000/spellbound/tree/main/safari-extension)
+  - ⏳ Firefox extension - Coming soon
 - **🔄 Next-level Text Tools:** Select, edit, and enhance in a snap.
 - **🎯 Smart Templates:** Save and reuse go-to prompts.
 - **🎤 Voice Input:** Speak, create, and wow in real time.
@@ -144,7 +155,7 @@ Having issues? Check out our [Issues](../../issues) page or create a new issue.
 - **🔗 More AI:** Plug into top models like Claude, Gemini & your own!
 
 ### Community Suggestions
-Got a cool feature idea or something you’d like to see? [Drop your suggestion](../../issues) or vote for your favorites or if you’re interested in getting involved, always open to new collaborators—let’s build it together!
+Got a cool feature idea or something you'd like to see? [Drop your suggestion](../../issues) or vote for your favorites or if you're interested in getting involved, always open to new collaborators—let's build it together!
 
 ---
 
