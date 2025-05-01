@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Spellbound: AI Writing Assistant",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI-powered multilingual assistant—instantly translate, fix grammar, or enhance text to supercharge your workflow",
   "permissions": [
     "contextMenus",
