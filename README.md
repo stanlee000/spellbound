@@ -75,8 +75,8 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
    - Watch your writing transform!
 
 3. **Browser Extensions**
-   - **Chrome:** Install from the [Chrome extension folder](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
-   - **Safari:** Build and install from the [Safari extension folder](https://github.com/stanlee000/spellbound/tree/main/safari-extension) (requires Xcode)
+   - **Chrome:** [Chrome extension](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+   - **Safari:** [Safari extension](https://github.com/stanlee000/spellbound/tree/main/safari-extension)
 
 ## 💡 Pro Moves
 
@@ -119,7 +119,7 @@ We welcome contributions! Here's how you can help:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **Common Issues:**
 

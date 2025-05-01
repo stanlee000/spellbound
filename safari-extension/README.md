@@ -79,7 +79,7 @@
 ### Installing the Safari Extension
 
 1. **Download the Extension**:
-   - Download the latest `spellbound-safari-extension_{version}.app` file from the [Releases](../../releases) section.
+   - Download the latest `spellbound-safari-extension_{version}.app` file from the [Releases](https://github.com/stanlee000/spellbound/releases) section.
 
 2. **Install the App**:
    - Open the downloaded file.
@@ -139,7 +139,7 @@ If you prefer to build the extension yourself:
 
 ## 📬 Support
 
-Having issues? Check out our [Issues](../../issues) page or create a new issue. Add label `safari-extension`.
+Having issues? Check out our [Issues](https://github.com/stanlee000/spellbound/issues) page or create a new issue. Add label `safari-extension`.
 
 ## 🤝 Contributing
 
