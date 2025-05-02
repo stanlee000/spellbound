@@ -1,293 +1,71 @@
-import { OpenAI } from 'openai';
-import Keychain from 'react-native-keychain';
+import OpenAI from 'openai';
+import * as Keychain from 'react-native-keychain';
 
+// OpenAI API service
 class OpenAIService {
-  private openaiClient: OpenAI | null = null;
-  private selectedModel: string = 'gpt-4o';
+  private client: OpenAI | null = null;
+  private apiKey: string | null = null;
+  private model = 'gpt-4o';
+  
+  // Common languages for translation
+  private languages = [
+    { code: 'en', name: 'English', native: 'English' },
+    { code: 'es', name: 'Spanish', native: 'Español' },
+    { code: 'fr', name: 'French', native: 'Français' },
+    { code: 'de', name: 'German', native: 'Deutsch' },
+    { code: 'it', name: 'Italian', native: 'Italiano' },
+    { code: 'pt', name: 'Portuguese', native: 'Português' },
+    { code: 'ru', name: 'Russian', native: 'Русский' },
+    { code: 'zh', name: 'Chinese', native: '中文' },
+    { code: 'ja', name: 'Japanese', native: '日本語' },
+    { code: 'ko', name: 'Korean', native: '한국어' },
+    { code: 'ar', name: 'Arabic', native: 'العربية' },
+    { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+    { code: 'tr', name: 'Turkish', native: 'Türkçe' },
+    { code: 'nl', name: 'Dutch', native: 'Nederlands' },
+    { code: 'sv', name: 'Swedish', native: 'Svenska' },
+  ];
 
   /**
-   * Test direct URL access instead of using the SDK
+   * Initialize the OpenAI service
    */
-  async testDirectAccess(): Promise<{ success: boolean, message: string }> {
+  public async initialize(): Promise<boolean> {
     try {
-      console.log('Testing direct access to OpenAI API without SDK');
-      // First get the API key
-      const credentials = await Keychain.getGenericPassword({ service: 'openai-api-key' });
-      
-      if (!credentials) {
-        return { 
-          success: false, 
-          message: 'No API key found in keychain' 
-        };
+      // Try to get API key from secure storage
+      const credentials = await Keychain.getGenericPassword({ service: 'openai-api' });
+      if (credentials && credentials.password) {
+        this.apiKey = credentials.password;
+        this.setupClient();
+        return true;
       }
-      
-      const apiKey = credentials.password;
-      
-      console.log('Attempting direct fetch to OpenAI API...');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      // Try to connect to OpenAI API with manual fetch
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'User-Agent': 'SpellboundApp/1.0'
-        },
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      // Log full response details for debugging
-      console.log('Direct fetch response status:', response.status);
-      console.log('Direct fetch response headers:', JSON.stringify(Array.from(response.headers.entries())));
-      
-      const responseText = await response.text();
-      console.log('Direct fetch response (first 100 chars):', responseText.substring(0, 100));
-      
-      let parsedData;
-      try {
-        // Try to parse as JSON if possible
-        parsedData = JSON.parse(responseText);
-        console.log('Response parsed as JSON successfully');
-      } catch (parseError) {
-        console.log('Response is not valid JSON');
-        // If it's HTML, return differently
-        if (responseText.includes('<html>')) {
-          return {
-            success: false,
-            message: `Received HTML instead of JSON API response. This suggests network interference or proxy issues. Status: ${response.status}`
-          };
-        }
-      }
-      
-      if (response.ok) {
-        return { 
-          success: true, 
-          message: `Direct fetch successful: Status ${response.status}` 
-        };
-      } else {
-        return { 
-          success: false, 
-          message: `Direct fetch failed: Status ${response.status} - ${responseText.substring(0, 100)}...` 
-        };
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        return {
-          success: false,
-          message: 'Connection timeout after 15 seconds'
-        };
-      }
-      return { 
-        success: false, 
-        message: `Direct fetch error: ${error instanceof Error ? error.message : String(error)}` 
-      };
-    }
-  }
-
-  /**
-   * Test connectivity to OpenAI API
-   * @returns {Promise<boolean>} Whether the connection test was successful
-   */
-  async testConnectivity(): Promise<{ success: boolean, message: string }> {
-    try {
-      // First get the API key
-      const credentials = await Keychain.getGenericPassword({ service: 'openai-api-key' });
-      
-      if (!credentials) {
-        return { 
-          success: false, 
-          message: 'No API key found in keychain' 
-        };
-      }
-      
-      const apiKey = credentials.password;
-      
-      // Try to connect to OpenAI API
-      const response = await fetch('https://api.openai.com/v1/models', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return { 
-          success: true, 
-          message: `Connection successful: ${response.status}, Models available: ${data.data.length}` 
-        };
-      } else {
-        const errorText = await response.text();
-        return { 
-          success: false, 
-          message: `Connection reached server but returned error: ${response.status} - ${errorText}` 
-        };
-      }
+      return false;
     } catch (error) {
-      return { 
-        success: false, 
-        message: `Connection error: ${error instanceof Error ? error.message : String(error)}` 
-      };
+      console.error('Error initializing OpenAI service:', error);
+      return false;
     }
   }
 
   /**
-   * Try connecting through a public CORS proxy
-   * This is a workaround for networks that block direct access to OpenAI
+   * Set the OpenAI API key
    */
-  async testProxyConnection(): Promise<{ success: boolean, message: string }> {
+  public async setApiKey(key: string): Promise<boolean> {
     try {
-      console.log('Testing connection through CORS proxy');
-      // First get the API key
-      const credentials = await Keychain.getGenericPassword({ service: 'openai-api-key' });
+      // Save API key in secure storage
+      await Keychain.setGenericPassword('openai-api-key', key, { service: 'openai-api' });
+      this.apiKey = key;
+      this.setupClient();
       
-      if (!credentials) {
-        return { 
-          success: false, 
-          message: 'No API key found in keychain' 
-        };
-      }
-      
-      const apiKey = credentials.password;
-      
-      // Use a public CORS proxy (note: for production use, you should set up your own proxy)
-      // This is just for testing connectivity
-      const corsProxyUrl = 'https://corsproxy.io/?';
-      const targetUrl = encodeURIComponent('https://api.openai.com/v1/models');
-      
-      console.log('Attempting connection through CORS proxy...');
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
-      
-      const response = await fetch(`${corsProxyUrl}${targetUrl}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'User-Agent': 'SpellboundApp/1.0'
-        },
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      console.log('CORS proxy response status:', response.status);
-      
-      const responseText = await response.text();
-      console.log('CORS proxy response (first 100 chars):', responseText.substring(0, 100));
-      
-      if (response.ok) {
-        return { 
-          success: true, 
-          message: `CORS proxy connection successful. This confirms your API key works, but your network may be blocking direct connections to OpenAI.` 
-        };
-      } else {
-        return { 
-          success: false, 
-          message: `CORS proxy connection failed: Status ${response.status}` 
-        };
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        return {
-          success: false,
-          message: 'CORS proxy connection timeout after 20 seconds'
-        };
-      }
-      return { 
-        success: false, 
-        message: `CORS proxy error: ${error instanceof Error ? error.message : String(error)}` 
-      };
-    }
-  }
-
-  /**
-   * Initialize the OpenAI client with the stored API key
-   * @returns {Promise<boolean>} Whether initialization was successful
-   */
-  async initialize(): Promise<boolean> {
-    try {
-      const credentials = await Keychain.getGenericPassword({ service: 'openai-api-key' });
-      
-      if (!credentials) {
-        console.log('No API key found in keychain');
-        this.openaiClient = null;
+      // Verify API key is valid by making a simple request
+      try {
+        await this.getAvailableModels();
+        return true;
+      } catch (error) {
+        console.error('Error validating API key:', error);
+        await Keychain.resetGenericPassword({ service: 'openai-api' });
+        this.apiKey = null;
+        this.client = null;
         return false;
       }
-      
-      const apiKey = credentials.password;
-      
-      // Create new OpenAI client instance with improved configuration
-      this.openaiClient = new OpenAI({
-        apiKey: apiKey,
-        baseURL: 'https://api.openai.com',
-        timeout: 30000, // 30 second timeout
-        maxRetries: 3,
-        dangerouslyAllowBrowser: true, // Required for React Native
-        defaultHeaders: {
-          'User-Agent': 'SpellboundApp/1.0'
-        },
-        defaultQuery: {
-          // Add timestamp to prevent caching
-          '_': Date.now().toString()
-        }
-      });
-      
-      console.log('OpenAI client initialized with config:', { 
-        baseURL: 'https://api.openai.com',
-        timeout: 30000,
-        maxRetries: 3
-      });
-      return true;
-    } catch (error) {
-      console.error('Error initializing OpenAI client:', error);
-      this.openaiClient = null;
-      return false;
-    }
-  }
-
-  /**
-   * Check if the OpenAI client is available and initialized
-   * @returns {boolean} Whether the client is available
-   */
-  isClientAvailable(): boolean {
-    if (!this.openaiClient) {
-      console.error('OpenAI client is not initialized');
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * Set the API key for OpenAI
-   * @param {string} apiKey - The OpenAI API key
-   * @returns {Promise<boolean>} Whether the key was set successfully
-   */
-  async setApiKey(apiKey: string): Promise<boolean> {
-    try {
-      await Keychain.setGenericPassword('openai', apiKey, { service: 'openai-api-key' });
-      
-      this.openaiClient = new OpenAI({
-        apiKey: apiKey,
-        baseURL: 'https://api.openai.com',
-        timeout: 30000, // 30 second timeout
-        maxRetries: 3,
-        dangerouslyAllowBrowser: true, // Required for React Native
-        defaultHeaders: {
-          'User-Agent': 'SpellboundApp/1.0'
-        },
-        defaultQuery: {
-          // Add timestamp to prevent caching
-          '_': Date.now().toString()
-        }
-      });
-      
-      return true;
     } catch (error) {
       console.error('Error setting API key:', error);
       return false;
@@ -295,104 +73,146 @@ class OpenAIService {
   }
 
   /**
-   * Set the model to use for OpenAI requests
-   * @param {string} model - The model ID to use
+   * Set the AI model to use
    */
-  setModel(model: string): void {
-    this.selectedModel = model;
+  public setModel(model: string): void {
+    this.model = model;
+  }
+
+  /**
+   * Setup the OpenAI client
+   */
+  private setupClient(): void {
+    if (!this.apiKey) return;
+    
+    this.client = new OpenAI({
+      apiKey: this.apiKey,
+      dangerouslyAllowBrowser: true // Required for React Native
+    });
   }
 
   /**
    * Get available OpenAI models
-   * @returns {Promise<Array>} List of available models
    */
-  async getAvailableModels() {
-    if (!this.isClientAvailable() || !this.openaiClient) {
-      throw new Error('OpenAI API key not set');
+  public async getAvailableModels(): Promise<Array<{ id: string, name: string }>> {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
     }
-    
+
     try {
-      const response = await this.openaiClient.models.list();
-      // Filter for relevant models (GPT-4)
-      const relevantModels = response.data.filter(model => 
-        model.id.startsWith('gpt-4')
-      );
-      
-      return relevantModels.map(model => ({
-        id: model.id,
-        name: model.id
-      }));
+      const response = await this.client.models.list();
+      return response.data
+        .filter(model => 
+          model.id.startsWith('gpt-') && 
+          !model.id.includes('instruct') &&
+          !model.id.includes('0301') &&
+          !model.id.includes('0314')
+        )
+        .map(model => ({
+          id: model.id,
+          name: model.id
+        }))
+        .sort((a, b) => {
+          if (a.id.includes('4') && !b.id.includes('4')) return -1;
+          if (!a.id.includes('4') && b.id.includes('4')) return 1;
+          return a.id.localeCompare(b.id);
+        });
     } catch (error) {
-      console.error('Error fetching available models:', error);
+      console.error('Error fetching models:', error);
       throw error;
     }
   }
 
   /**
-   * Check text for spelling, grammar and style issues
-   * @param {string} text - Text to check
-   * @returns {Promise<Object>} Corrections, language info and the text
+   * Get common languages for translation
    */
-  async checkText(text: string) {
-    if (!this.isClientAvailable() || !this.openaiClient) {
-      throw new Error('OpenAI API key not set');
+  public getCommonLanguages() {
+    return this.languages;
+  }
+
+  /**
+   * Detect language of text
+   */
+  private async detectLanguage(text: string): Promise<{ code: string, name: string, confidence: number }> {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
     }
 
+    const prompt = `Identify the language of the following text and return a JSON object with "code" (ISO 639-1 language code), "name" (language name in English), and "confidence" (number between 0 and 1):
+
+Text: "${text}"
+
+Response (JSON only):`;
+
     try {
-      console.log('Starting language detection API call');
-      // First, detect the language
-      const langResponse = await this.openaiClient.chat.completions.create({
-        model: this.selectedModel,
-        messages: [
-          {
-            role: "system",
-            content: "You are a language detection expert. Return a JSON object with: 1) 'code': ISO language code (e.g., 'en', 'es'), 2) 'name': full language name in English, 3) 'native': language name in its native form. Do NOT format the response as markdown or a code block."
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 50
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
       });
 
-      const languageContent = langResponse.choices[0].message.content?.trim() || '';
-      console.log('Language detection response:', languageContent);
-      const languageInfo = this.parseJsonResponse(languageContent);
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
 
-      console.log('Starting corrections API call');
-      // Then check for corrections
-      const response = await this.openaiClient.chat.completions.create({
-        model: this.selectedModel,
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional proofreader. The text is in ${languageInfo.name} (${languageInfo.code}). 
-            Identify spelling, grammar, and style issues. Return a JSON object with:
-            1) 'corrections': array of {original, suggestion} pairs
-            2) 'languageSpecific': array of language-specific improvement suggestions
-            For example, if the text is in English and uses British spelling but could be made more consistent with American English, note that.
-            If no corrections are needed, return { "corrections": [], "languageSpecific": [] }
-            IMPORTANT: Return ONLY the raw JSON without any markdown formatting, code blocks, or additional text.`
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 500
+      return JSON.parse(content);
+    } catch (error) {
+      console.error('Error detecting language:', error);
+      // Default to English if detection fails
+      return { code: 'en', name: 'English', confidence: 0.5 };
+    }
+  }
+
+  /**
+   * Check text for grammar and style issues
+   */
+  public async checkText(text: string) {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const languageInfo = await this.detectLanguage(text);
+
+    const prompt = `Review the following text in ${languageInfo.name} for grammar, spelling, and style issues. Return a JSON object with the following structure:
+    {
+      "corrections": [
+        {
+          "original": "text with issue",
+          "suggestion": "corrected text"
+        }
+      ],
+      "languageSpecific": [
+        "suggestion specific to ${languageInfo.name} (e.g., idioms, formal/informal usage)"
+      ]
+    }
+
+    Text: "${text}"
+    
+    Response (JSON only):`;
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
       });
 
-      const correctionsContent = response.choices[0].message.content?.trim() || '';
-      console.log('Corrections response:', correctionsContent);
-      const corrections = this.parseJsonResponse(correctionsContent);
-      
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      const result = JSON.parse(content);
       return {
-        ...corrections,
-        language: languageInfo,
-        text
+        language: {
+          ...languageInfo,
+          native: this.languages.find(lang => lang.code === languageInfo.code)?.native || languageInfo.name
+        },
+        corrections: result.corrections || [],
+        languageSpecific: result.languageSpecific || []
       };
     } catch (error) {
       console.error('Error checking text:', error);
@@ -401,90 +221,74 @@ class OpenAIService {
   }
 
   /**
-   * Enhance text with a specific preset
-   * @param {Object} params - Enhancement parameters
-   * @returns {Promise<Object>} Enhanced text and detected language
+   * Enhance text with specified style or preset
    */
-  async enhanceText({ text, preset, customTone, additionalContext }: {
+  public async enhanceText({ text, preset, customTone, additionalContext }: {
     text: string,
     preset: string,
     customTone?: string,
     additionalContext?: string
   }) {
-    if (!this.isClientAvailable() || !this.openaiClient) {
-      throw new Error('OpenAI API key not set');
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
     }
 
+    let instructions = '';
+    switch (preset) {
+      case 'twitter':
+        instructions = 'Transform the text into an engaging tweet format with appropriate hashtags. Keep it under 280 characters.';
+        break;
+      case 'linkedin':
+        instructions = 'Rewrite the text as a professional LinkedIn post focused on business value and insights. Use an appropriate tone for professional networking.';
+        break;
+      case 'instagram':
+        instructions = 'Adapt the text for an Instagram post that feels authentic and engaging. Include suggested hashtags at the end.';
+        break;
+      case 'reddit':
+        instructions = 'Format the text as a clear Reddit post with good structure, readability, and an engaging style that invites discussion.';
+        break;
+      case 'hackernews':
+        instructions = 'Optimize the text for a Hacker News audience with technical accuracy, depth, and a straightforward style.';
+        break;
+      case 'promptBuilder':
+        instructions = 'Structure the text as a well-crafted prompt for an AI language model, with clear instructions, context, and format specifications.';
+        break;
+      case 'custom':
+        instructions = `Rewrite the text in a ${customTone || 'clear and professional'} tone.`;
+        break;
+      default:
+        instructions = 'Enhance the text by improving clarity, engagement, and flow while maintaining the original meaning.';
+    }
+
+    if (additionalContext) {
+      instructions += ` Additional context: ${additionalContext}`;
+    }
+
+    const prompt = `${instructions}
+
+Original text: "${text}"
+
+Return a JSON object with:
+{
+  "enhancedText": "the enhanced text"
+}
+
+Response (JSON only):`;
+
     try {
-      console.log('Starting language detection for enhancement');
-      // First, detect the language
-      const langResponse = await this.openaiClient.chat.completions.create({
-        model: this.selectedModel,
-        messages: [
-          {
-            role: "system",
-            content: "You are a language detection expert. Analyze the provided text and return ONLY the ISO language code (e.g., 'en', 'es', 'fr', etc.) of the primary language used. Do not include any explanations, markdown formatting, or additional text."
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 10
-      });
-
-      const detectedLang = langResponse.choices[0].message.content?.trim() || 'en';
-      console.log('Detected language:', detectedLang);
-
-      // Define preset prompts
-      const presetPrompts: {[key: string]: string} = {
-        twitter: `Rewrite this ${detectedLang} text as an engaging X (Twitter) post. Make it concise, impactful. You can divide the text into multiple posts if need to engage the audience (each post should be 280 characters or less). ${additionalContext ? `Additional context: ${additionalContext}.` : ''} Return ONLY the final text without any markdown formatting or additional notes:`,
-        
-        linkedin: `Rewrite this ${detectedLang} text as a professional LinkedIn post. Focus on business value, insights, and professional tone. Add relevant hashtags. ${additionalContext ? `Additional context: ${additionalContext}.` : ''} Return ONLY the final text without any markdown formatting or additional notes:`,
-        
-        instagram: `Rewrite this ${detectedLang} text as an engaging Instagram post. Make it relatable, authentic, and add relevant hashtags. ${additionalContext ? `Additional context: ${additionalContext}.` : ''} Return ONLY the final text without any markdown formatting or additional notes:`,
-        
-        hackernews: `Rewrite this ${detectedLang} text in a style suitable for Hacker News. Focus on technical accuracy, intellectual depth, and objective analysis. ${additionalContext ? `Additional context: ${additionalContext}.` : ''} Return ONLY the final text without any markdown formatting or additional notes:`,
-        
-        reddit: `Rewrite this ${detectedLang} text as a Reddit post. Make it informative yet conversational, with good formatting. ${additionalContext ? `Additional context: ${additionalContext}.` : ''} Return ONLY the final text without any markdown formatting or additional notes:`,
-        
-        promptBuilder: `Transform this ${detectedLang} text into a well-structured LLM prompt following best practices:
-        1. Be specific and clear about the desired outcome
-        2. Break down complex tasks into steps
-        3. Include relevant context and constraints
-        4. Specify the format of the expected response
-        5. Use examples if helpful
-        ${additionalContext ? `Additional context to consider: ${additionalContext}.` : ''}
-        Return ONLY the final prompt without any markdown formatting or additional notes:`,
-        
-        custom: `Rewrite this ${detectedLang} text with the following tone: ${customTone}. ${additionalContext ? `Additional context: ${additionalContext}.` : ''} Return ONLY the final text without any markdown formatting or additional notes:`
-      };
-
-      const prompt = preset in presetPrompts ? presetPrompts[preset] : presetPrompts.custom;
-      console.log('Starting text enhancement API call');
-      console.log('Using preset:', preset);
-
-      const response = await this.openaiClient.chat.completions.create({
-        model: this.selectedModel,
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert content writer who specializes in adapting text for different platforms while maintaining the core message. Return ONLY the enhanced text without any additional formatting, markdown, code blocks, or additional notes. ${prompt}`
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        max_tokens: 500
+        response_format: { type: 'json_object' },
       });
 
-      return {
-        enhancedText: response.choices[0].message.content?.trim(),
-        detectedLanguage: detectedLang
-      };
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      return JSON.parse(content);
     } catch (error) {
       console.error('Error enhancing text:', error);
       throw error;
@@ -493,159 +297,49 @@ class OpenAIService {
 
   /**
    * Translate text to a target language
-   * @param {Object} params - Translation parameters
-   * @returns {Promise<Object>} Translation results
    */
-  async translateText({ text, targetLanguage }: { text: string, targetLanguage: string }) {
-    if (!this.isClientAvailable() || !this.openaiClient) {
-      throw new Error('OpenAI API key not set');
+  public async translateText({ text, targetLanguage }: {
+    text: string,
+    targetLanguage: string
+  }) {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
     }
 
+    const sourceLanguageInfo = await this.detectLanguage(text);
+
+    const prompt = `Translate the following text from ${sourceLanguageInfo.name} to ${targetLanguage}.
+
+Original text: "${text}"
+
+Return a JSON object with:
+{
+  "translation": "the translated text",
+  "notes": "any relevant translation notes or alternative phrasings (if applicable)"
+}
+
+Response (JSON only):`;
+
     try {
-      console.log('Starting translation API call');
-      console.log('Target language:', targetLanguage);
-      
-      const response = await this.openaiClient.chat.completions.create({
-        model: this.selectedModel,
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional translator. Translate the provided text to ${targetLanguage}. 
-            Return a JSON object with:
-            1) 'translation': the translated text
-            2) 'notes': any relevant notes about the translation (idioms, cultural references, etc.)
-            IMPORTANT: Return ONLY the raw JSON without any markdown formatting, code blocks, or additional text.`
-          },
-          {
-            role: "user",
-            content: text
-          }
-        ],
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_tokens: 1000
+        response_format: { type: 'json_object' },
       });
 
-      const translationContent = response.choices[0].message.content?.trim() || '';
-      return this.parseJsonResponse(translationContent);
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      return JSON.parse(content);
     } catch (error) {
       console.error('Error translating text:', error);
       throw error;
     }
   }
-
-  /**
-   * Parse a potentially markdown-wrapped JSON response
-   * @param {string} content - Response content from OpenAI
-   * @returns {Object} Parsed JSON object
-   */
-  private parseJsonResponse(content: string): any {
-    let jsonStr = content.trim();
-    
-    // Check if the response is wrapped in markdown code blocks
-    if (jsonStr.startsWith('```') && jsonStr.endsWith('```')) {
-      // Extract the JSON content from the code block
-      jsonStr = jsonStr.replace(/^```(?:json)?/, '').replace(/```$/, '').trim();
-    }
-    
-    // Handle other potential markdown formatting
-    if (jsonStr.includes('```json')) {
-      const jsonMatch = jsonStr.match(/```json\s*([\s\S]*?)\s*```/);
-      if (jsonMatch && jsonMatch[1]) {
-        jsonStr = jsonMatch[1].trim();
-      }
-    }
-    
-    try {
-      return JSON.parse(jsonStr);
-    } catch (error) {
-      console.error('JSON parsing error with content:', jsonStr);
-      throw error;
-    }
-  }
-
-  /**
-   * Get common languages for translation
-   * @returns {Array} List of common languages
-   */
-  getCommonLanguages() {
-    return [
-      { code: 'en', name: 'English', native: 'English' },
-      { code: 'es', name: 'Spanish', native: 'Español' },
-      { code: 'fr', name: 'French', native: 'Français' },
-      { code: 'de', name: 'German', native: 'Deutsch' },
-      { code: 'it', name: 'Italian', native: 'Italiano' },
-      { code: 'pt', name: 'Portuguese', native: 'Português' },
-      { code: 'ru', name: 'Russian', native: 'Русский' },
-      { code: 'zh', name: 'Chinese', native: '中文' },
-      { code: 'ja', name: 'Japanese', native: '日本語' },
-      { code: 'ko', name: 'Korean', native: '한국어' },
-      { code: 'ar', name: 'Arabic', native: 'العربية' },
-      { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
-      { code: 'bn', name: 'Bengali', native: 'বাংলা' },
-      { code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
-      { code: 'tr', name: 'Turkish', native: 'Türkçe' }
-    ];
-  }
-
-  /**
-   * Test general internet connectivity
-   * This helps determine if the issue is specific to OpenAI or a general network problem
-   */
-  async testGeneralConnectivity(): Promise<{ success: boolean, results: Array<{site: string, status: string}> }> {
-    const sitesToTest = [
-      'https://www.google.com',
-      'https://www.apple.com',
-      'https://www.github.com',
-      'https://www.microsoft.com'
-    ];
-    
-    console.log('Testing general internet connectivity...');
-    
-    const results = [];
-    let overallSuccess = true;
-    
-    for (const site of sitesToTest) {
-      try {
-        console.log(`Testing connectivity to ${site}...`);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(site, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'SpellboundApp/1.0'
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        results.push({
-          site,
-          status: `OK (${response.status})`
-        });
-        
-        console.log(`Connection to ${site} successful with status ${response.status}`);
-      } catch (error: any) {
-        overallSuccess = false;
-        
-        results.push({
-          site,
-          status: error.name === 'AbortError' 
-            ? 'Timeout after 10s' 
-            : `Error: ${error.message}`
-        });
-        
-        console.log(`Connection to ${site} failed: ${error.message}`);
-      }
-    }
-    
-    return {
-      success: overallSuccess,
-      results
-    };
-  }
 }
 
-// Export as a singleton
+// Export as singleton
 export default new OpenAIService(); 

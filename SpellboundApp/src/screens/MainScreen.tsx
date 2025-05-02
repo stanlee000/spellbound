@@ -7,7 +7,8 @@ import {
   ScrollView,
   SafeAreaView,
   TextInput,
-  Alert
+  Alert,
+  StatusBar
 } from 'react-native';
 import { useAppContext } from '../contexts/AppContext';
 import GrammarTab from '../components/GrammarTab';
@@ -15,6 +16,7 @@ import EnhanceTab from '../components/EnhanceTab';
 import TranslateTab from '../components/TranslateTab';
 import { useLinkingHandler } from '../utils/linkingHandler';
 import openaiService from '../services/openai';
+import AppIcon from '../assets/icon';
 
 // Icons (you would normally use a library like react-native-vector-icons)
 const TabIconGrammar = () => <Text style={styles.tabIcon}>✓</Text>;
@@ -34,26 +36,33 @@ const MainScreen: React.FC = () => {
     isProcessing,
     isApiKeySet,
     selectedModel,
-    setApiKey
+    setApiKey,
+    languageInfo
   } = useAppContext();
 
   const [textInput, setTextInput] = useState('');
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isChangingApiKey, setIsChangingApiKey] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
+  const [showIntroScreen, setShowIntroScreen] = useState(false);
 
   // Initialize with clipboard text if available
   useEffect(() => {
     if (clipboardText && !originalText) {
       setTextInput(clipboardText);
     }
+    
+    // If no text is processed yet, show the intro screen
+    setShowIntroScreen(!originalText);
   }, [clipboardText, originalText]);
 
   // Handle text received from share extension
-  useLinkingHandler((sharedText) => {
-    setTextInput(sharedText);
-    // Optionally process the text immediately
-    // checkGrammar(sharedText);
+  useLinkingHandler((sharedText: string) => {
+    if (sharedText) {
+      setTextInput(sharedText);
+      // Optionally process the text immediately
+      // checkGrammar(sharedText);
+    }
   });
 
   const handleTabPress = (index: number) => {
@@ -86,6 +95,8 @@ const MainScreen: React.FC = () => {
         setOriginalText(textInput);
         break;
     }
+    
+    setShowIntroScreen(false);
   };
 
   const handleChangeApiKey = async () => {
@@ -109,6 +120,10 @@ const MainScreen: React.FC = () => {
   };
 
   const renderTabContent = () => {
+    if (showIntroScreen) {
+      return renderIntroScreen();
+    }
+    
     switch (activeTab) {
       case 0:
         return <GrammarTab />;
@@ -120,216 +135,222 @@ const MainScreen: React.FC = () => {
         return <GrammarTab />;
     }
   };
+  
+  const renderIntroScreen = () => (
+    <View style={styles.introContainer}>
+      <AppIcon size={48} />
+      <Text style={styles.introTitle}>Welcome to Spellbound</Text>
+      <Text style={styles.introSubtitle}>
+        Your AI-powered writing assistant that helps perfect your text in seconds
+      </Text>
+      
+      <View style={styles.introStepsContainer}>
+        <Text style={styles.introStepsTitle}>Get Started in 3 Simple Steps</Text>
+        
+        <View style={styles.introStep}>
+          <Text style={styles.introStepText}>
+            1. Select and copy text using: 
+            <Text style={styles.introStepHighlight}> ⌘ + C</Text>
+          </Text>
+        </View>
+        
+        <View style={styles.introStep}>
+          <Text style={styles.introStepText}>
+            2. For grammar & style use: 
+            <Text style={styles.introStepHighlight}> ⌘ + Shift + C</Text>
+          </Text>
+        </View>
+        
+        <View style={styles.introStep}>
+          <Text style={styles.introStepText}>
+            3. Need translation? Use: 
+            <Text style={styles.introStepHighlight}> ⌘ + Shift + C</Text>
+          </Text>
+        </View>
+      </View>
+      
+      <TouchableOpacity 
+        style={styles.configButton}
+        onPress={() => setIsSettingsVisible(true)}
+      >
+        <Text style={styles.configButtonText}>Configure Settings</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Spellbound</Text>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => setIsSettingsVisible(!isSettingsVisible)}
-        >
-          <TabIconSettings />
-        </TouchableOpacity>
+        <View style={styles.headerLogoContainer}>
+          <AppIcon size={32} />
+          <Text style={styles.headerTitle}>Spellbound</Text>
+        </View>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => {/* Minimize function would go here */}}
+          >
+            <Text style={styles.headerMinimizeIcon}>—</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => setIsSettingsVisible(!isSettingsVisible)}
+          >
+            <TabIconSettings />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isSettingsVisible && (
         <View style={styles.settingsPanel}>
-          <Text style={styles.settingsPanelTitle}>Settings</Text>
-          <Text style={styles.settingsLabel}>API Key: {isApiKeySet ? '••••••••••••••••' : 'Not set'}</Text>
-          <Text style={styles.settingsLabel}>Model: {selectedModel}</Text>
-          
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={async () => {
-              try {
-                const result = await openaiService.testConnectivity();
-                Alert.alert(
-                  result.success ? 'Connection Test Successful' : 'Connection Test Failed',
-                  result.message
-                );
-              } catch (error) {
-                Alert.alert('Error', `Test failed: ${error instanceof Error ? error.message : String(error)}`);
-              }
-            }}
-          >
-            <Text style={styles.settingsButtonText}>Test API Connection</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={async () => {
-              try {
-                const result = await openaiService.testDirectAccess();
-                Alert.alert(
-                  result.success ? 'Direct API Test Successful' : 'Direct API Test Failed',
-                  result.message
-                );
-              } catch (error) {
-                Alert.alert('Error', `Direct test failed: ${error instanceof Error ? error.message : String(error)}`);
-              }
-            }}
-          >
-            <Text style={styles.settingsButtonText}>Test Direct API Access</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={async () => {
-              try {
-                Alert.alert('Testing Proxy Connection', 'Attempting to connect through a CORS proxy. This may take up to 20 seconds...');
-                const result = await openaiService.testProxyConnection();
-                Alert.alert(
-                  result.success ? 'Proxy Connection Test Successful' : 'Proxy Connection Test Failed',
-                  result.message
-                );
-              } catch (error) {
-                Alert.alert('Error', `Proxy test failed: ${error instanceof Error ? error.message : String(error)}`);
-              }
-            }}
-          >
-            <Text style={styles.settingsButtonText}>Test via CORS Proxy</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={() => {
-              Alert.alert(
-                'Network Troubleshooting',
-                'If you\'re experiencing connection issues:\n\n' +
-                '1. Try using a different network (e.g., mobile data)\n' +
-                '2. Your network may be blocking OpenAI API access\n' +
-                '3. Consider using a VPN to bypass network restrictions\n' +
-                '4. Contact your network administrator if on a corporate network'
-              );
-            }}
-          >
-            <Text style={styles.settingsButtonText}>Network Troubleshooting</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.settingsButton}
-            onPress={async () => {
-              try {
-                Alert.alert('Testing Internet Connectivity', 'Testing connection to several websites...');
-                const result = await openaiService.testGeneralConnectivity();
-                
-                let resultMessage = 'Results:\n\n';
-                result.results.forEach(siteResult => {
-                  resultMessage += `${siteResult.site}: ${siteResult.status}\n`;
-                });
-                
-                Alert.alert(
-                  result.success ? 'General Internet Connectivity OK' : 'Some Connection Tests Failed',
-                  resultMessage
-                );
-              } catch (error) {
-                Alert.alert('Error', `Connectivity test failed: ${error instanceof Error ? error.message : String(error)}`);
-              }
-            }}
-          >
-            <Text style={styles.settingsButtonText}>Test Internet Connectivity</Text>
-          </TouchableOpacity>
-          
-          {!isChangingApiKey ? (
-            <TouchableOpacity 
-              style={styles.settingsButton}
-              onPress={() => setIsChangingApiKey(true)}
-            >
-              <Text style={styles.settingsButtonText}>Change API Key</Text>
+          <View style={styles.settingsHeader}>
+            <Text style={styles.settingsPanelTitle}>Settings</Text>
+            <TouchableOpacity onPress={() => setIsSettingsVisible(false)}>
+              <Text style={styles.settingsCloseButton}>×</Text>
             </TouchableOpacity>
-          ) : (
-            <View style={styles.apiKeyInputContainer}>
-              <TextInput
-                style={styles.apiKeyInput}
-                value={newApiKey}
-                onChangeText={setNewApiKey}
-                placeholder="Enter new API key"
-                placeholderTextColor="#999"
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry
-              />
-              <View style={styles.apiKeyButtonsContainer}>
-                <TouchableOpacity
-                  style={[styles.apiKeyButton, styles.cancelButton]}
-                  onPress={() => {
-                    setIsChangingApiKey(false);
-                    setNewApiKey('');
-                  }}
+          </View>
+          
+          <View style={styles.settingsSection}>
+            <Text style={styles.settingsSectionTitle}>OpenAI API Key</Text>
+            {!isChangingApiKey ? (
+              <>
+                <Text style={styles.settingsValue}>
+                  {isApiKeySet ? '••••••••••••••••' : 'Not set'}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.settingsActionButton}
+                  onPress={() => setIsChangingApiKey(true)}
                 >
-                  <Text style={styles.apiKeyButtonText}>Cancel</Text>
+                  <Text style={styles.settingsActionButtonText}>Change API Key</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.apiKeyButton, styles.saveButton]}
-                  onPress={handleChangeApiKey}
-                >
-                  <Text style={styles.apiKeyButtonText}>Save</Text>
-                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.apiKeyInputContainer}>
+                <TextInput
+                  style={styles.apiKeyInput}
+                  value={newApiKey}
+                  onChangeText={setNewApiKey}
+                  placeholder="Enter your OpenAI API key"
+                  placeholderTextColor="#999"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                />
+                <Text style={styles.settingsHelpText}>
+                  To get your API key, visit your OpenAI account settings. Your API key will be used securely.
+                </Text>
+                <View style={styles.apiKeyButtonsContainer}>
+                  <TouchableOpacity
+                    style={[styles.apiKeyButton, styles.cancelButton]}
+                    onPress={() => {
+                      setIsChangingApiKey(false);
+                      setNewApiKey('');
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.apiKeyButton, styles.saveButton]}
+                    onPress={handleChangeApiKey}
+                  >
+                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+            )}
+          </View>
+          
+          <View style={styles.settingsSection}>
+            <Text style={styles.settingsSectionTitle}>Model</Text>
+            <Text style={styles.settingsValue}>{selectedModel}</Text>
+            <Text style={styles.settingsHelpText}>
+              Recommended: gpt-4o or gpt-4.1
+            </Text>
+          </View>
+          
+          <View style={styles.settingsSection}>
+            <Text style={styles.settingsSectionTitle}>Available Hotkeys</Text>
+            <View style={styles.hotkeyContainer}>
+              <Text style={styles.hotkeyName}>⌘+Shift+C</Text>
+              <Text style={styles.hotkeyDescription}>For grammar & style use</Text>
             </View>
-          )}
+            <View style={styles.hotkeyContainer}>
+              <Text style={styles.hotkeyName}>⌘+Shift+T</Text>
+              <Text style={styles.hotkeyDescription}>Translations shortcut</Text>
+            </View>
+          </View>
         </View>
       )}
 
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.textInput}
-          value={textInput}
-          onChangeText={setTextInput}
-          placeholder="Enter or paste text here..."
-          placeholderTextColor="#999"
-          multiline
-          numberOfLines={4}
-        />
-        <View style={styles.inputActions}>
+      {!showIntroScreen && (
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.textInput}
+            value={textInput}
+            onChangeText={setTextInput}
+            placeholder="Enter or paste text here..."
+            placeholderTextColor="#999"
+            multiline
+            numberOfLines={4}
+          />
+          <View style={styles.inputActions}>
+            <TouchableOpacity
+              style={styles.inputActionButton}
+              onPress={handleRefreshClipboard}
+            >
+              <Text style={styles.inputActionText}>Paste</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.processButton, isProcessing && styles.disabledButton]}
+              onPress={handleProcessText}
+              disabled={isProcessing}
+            >
+              <Text style={styles.processButtonText}>
+                {isProcessing ? 'Processing...' : 'Process Text'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {languageInfo && !showIntroScreen && (
+        <View style={styles.languageInfoContainer}>
+          <Text style={styles.languageInfoText}>
+            Detected Language: {languageInfo.name}
+          </Text>
+        </View>
+      )}
+
+      {!showIntroScreen && (
+        <View style={styles.tabBar}>
           <TouchableOpacity
-            style={styles.inputActionButton}
-            onPress={handleRefreshClipboard}
+            style={[styles.tab, activeTab === 0 && styles.activeTab]}
+            onPress={() => handleTabPress(0)}
           >
-            <Text style={styles.inputActionText}>Paste</Text>
+            <Text style={[styles.tabText, activeTab === 0 && styles.activeTabText]}>
+              Grammar & Style
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.processButton, isProcessing && styles.disabledButton]}
-            onPress={handleProcessText}
-            disabled={isProcessing}
+            style={[styles.tab, activeTab === 1 && styles.activeTab]}
+            onPress={() => handleTabPress(1)}
           >
-            <Text style={styles.processButtonText}>
-              {isProcessing ? 'Processing...' : 'Process Text'}
+            <Text style={[styles.tabText, activeTab === 1 && styles.activeTabText]}>
+              Enhance & Rewrite
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 2 && styles.activeTab]}
+            onPress={() => handleTabPress(2)}
+          >
+            <Text style={[styles.tabText, activeTab === 2 && styles.activeTabText]}>
+              Translate
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 0 && styles.activeTab]}
-          onPress={() => handleTabPress(0)}
-        >
-          <TabIconGrammar />
-          <Text style={[styles.tabText, activeTab === 0 && styles.activeTabText]}>
-            Grammar
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 1 && styles.activeTab]}
-          onPress={() => handleTabPress(1)}
-        >
-          <TabIconEnhance />
-          <Text style={[styles.tabText, activeTab === 1 && styles.activeTabText]}>
-            Enhance
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 2 && styles.activeTab]}
-          onPress={() => handleTabPress(2)}
-        >
-          <TabIconTranslate />
-          <Text style={[styles.tabText, activeTab === 2 && styles.activeTabText]}>
-            Translate
-          </Text>
-        </TouchableOpacity>
-      </View>
+      )}
 
       <View style={styles.content}>{renderTabContent()}</View>
     </SafeAreaView>
@@ -339,88 +360,166 @@ const MainScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F7FAFC',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EAEAEA',
+    height: 60,
+  },
+  headerLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#333',
   },
-  settingsButton: {
-    padding: 8,
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  headerMinimizeIcon: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: 'bold',
   },
   settingsPanel: {
     padding: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#EAEAEA',
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   settingsPanelTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
     color: '#333',
   },
-  settingsLabel: {
+  settingsCloseButton: {
+    fontSize: 24,
+    color: '#999',
+  },
+  settingsSection: {
+    marginBottom: 20,
+  },
+  settingsSectionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  settingsValue: {
     fontSize: 14,
     color: '#666',
     marginBottom: 8,
   },
-  settingsButtonText: {
-    color: '#6200ee',
+  settingsHelpText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  settingsActionButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  settingsActionButtonText: {
+    color: '#6B46C1',
     fontWeight: '500',
     fontSize: 14,
+  },
+  hotkeyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  hotkeyName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B46C1',
+    backgroundColor: 'rgba(107, 70, 193, 0.05)',
+    padding: 4,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  hotkeyDescription: {
+    fontSize: 14,
+    color: '#555',
   },
   apiKeyInputContainer: {
     marginTop: 8,
   },
   apiKeyInput: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 8,
+    borderColor: '#EAEAEA',
+    borderRadius: 8,
+    padding: 12,
     fontSize: 14,
     marginBottom: 8,
   },
   apiKeyButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    marginTop: 12,
   },
   apiKeyButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     marginLeft: 8,
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F0F0F0',
+  },
+  cancelButtonText: {
+    color: '#555',
+    fontWeight: '500',
+    fontSize: 14,
   },
   saveButton: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#6B46C1',
   },
-  apiKeyButtonText: {
+  saveButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#fff',
+    color: '#FFFFFF',
   },
   inputContainer: {
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    backgroundColor: '#FFFFFF',
   },
   textInput: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F5F5',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#EAEAEA',
     borderRadius: 8,
     padding: 12,
     minHeight: 120,
@@ -434,47 +533,56 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   inputActionButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F0F0F0',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   inputActionText: {
     color: '#555',
     fontWeight: '500',
   },
   processButton: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#6B46C1',
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   disabledButton: {
-    backgroundColor: '#b388ff',
+    backgroundColor: '#9F7AEA',
   },
   processButtonText: {
     color: '#fff',
     fontWeight: '600',
   },
+  languageInfoContainer: {
+    backgroundColor: '#6B46C1',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  languageInfoText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   tabBar: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
   },
   tab: {
-    flex: 1,
     paddingVertical: 12,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
+    marginRight: 16,
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#6200ee',
-  },
-  tabIcon: {
-    fontSize: 18,
-    marginRight: 8,
+    borderBottomColor: '#6B46C1',
   },
   tabText: {
     color: '#666',
@@ -482,10 +590,90 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#6200ee',
+    color: '#6B46C1',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  // Intro screen styles
+  introContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#FFFFFF',
+  },
+  introLogo: {
+    width: 48,
+    height: 48,
+    marginBottom: 16,
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  introSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  introStepsContainer: {
+    width: '100%',
+    maxWidth: 500,
+    marginBottom: 32,
+  },
+  introStepsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  introStep: {
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+  },
+  introStepText: {
+    fontSize: 15,
+    color: '#333',
+    lineHeight: 24,
+  },
+  introStepHighlight: {
+    backgroundColor: 'rgba(107, 70, 193, 0.05)',
+    color: '#6B46C1',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  configButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  configButtonText: {
+    color: '#333',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  tabIcon: {
+    fontSize: 18,
+    color: '#666',
   },
 });
 

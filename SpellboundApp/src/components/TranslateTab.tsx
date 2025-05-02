@@ -31,54 +31,39 @@ const TranslateTab: React.FC = () => {
   };
 
   const renderLanguageSelector = () => {
-    // Group languages into rows of 3 for better display
-    const groupedLanguages = [];
-    for (let i = 0; i < commonLanguages.length; i += 3) {
-      groupedLanguages.push(commonLanguages.slice(i, i + 3));
-    }
-
     return (
       <View style={styles.languageSelectorContainer}>
-        <Text style={styles.sectionTitle}>Select target language:</Text>
+        <Text style={styles.sectionTitle}>Select a language to translate your text:</Text>
         
-        <View style={styles.languageGridContainer}>
-          {groupedLanguages.map((row, rowIndex) => (
-            <View key={`row-${rowIndex}`} style={styles.languageRow}>
-              {row.map(language => (
-                <TouchableOpacity
-                  key={language.code}
-                  style={[
-                    styles.languageButton,
-                    targetLanguage?.code === language.code && styles.selectedLanguage,
-                    // Disable selection of the same language as the source
-                    languageInfo?.code === language.code && styles.disabledLanguage
-                  ]}
-                  onPress={() => handleLanguageSelect(language)}
-                  disabled={languageInfo?.code === language.code || isProcessing}
-                >
-                  <Text
-                    style={[
-                      styles.languageName,
-                      targetLanguage?.code === language.code && styles.selectedLanguageText,
-                      languageInfo?.code === language.code && styles.disabledLanguageText
-                    ]}
-                  >
-                    {language.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.languageNative,
-                      targetLanguage?.code === language.code && styles.selectedLanguageText,
-                      languageInfo?.code === language.code && styles.disabledLanguageText
-                    ]}
-                  >
-                    {language.native}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.languageChipsContainer}
+          contentContainerStyle={styles.languageChipsContent}
+        >
+          {commonLanguages.map(language => (
+            <TouchableOpacity
+              key={language.code}
+              style={[
+                styles.languageChip,
+                targetLanguage?.code === language.code && styles.selectedLanguageChip,
+                languageInfo?.code === language.code && styles.disabledLanguageChip
+              ]}
+              onPress={() => handleLanguageSelect(language)}
+              disabled={languageInfo?.code === language.code || isProcessing}
+            >
+              <Text
+                style={[
+                  styles.languageChipText,
+                  targetLanguage?.code === language.code && styles.selectedLanguageChipText,
+                  languageInfo?.code === language.code && styles.disabledLanguageChipText
+                ]}
+              >
+                {language.name} ({language.native})
+              </Text>
+            </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       </View>
     );
   };
@@ -87,7 +72,7 @@ const TranslateTab: React.FC = () => {
     if (isProcessing) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
+          <ActivityIndicator size="large" color="#6B46C1" />
           <Text style={styles.loadingText}>
             Translating to {targetLanguage?.name}...
           </Text>
@@ -107,23 +92,25 @@ const TranslateTab: React.FC = () => {
 
     return (
       <View style={styles.resultContainer}>
-        <Text style={styles.resultTitle}>Translation:</Text>
-        <ScrollView style={styles.translationContainer}>
+        <TouchableOpacity 
+          style={styles.translationContainer}
+          onPress={() => copyToClipboard(translation.translation)}
+        >
           <Text style={styles.translationText}>{translation.translation}</Text>
           
           {translation.notes && (
             <View style={styles.notesContainer}>
-              <Text style={styles.notesLabel}>Translation Notes:</Text>
-              <Text style={styles.notesText}>{translation.notes}</Text>
+              <Text style={styles.notesIcon}>ℹ️</Text>
+              <View style={styles.notesTextContainer}>
+                <Text style={styles.notesLabel}>Translation Notes:</Text>
+                <Text style={styles.notesText}>{translation.notes}</Text>
+              </View>
             </View>
           )}
-        </ScrollView>
-        
-        <TouchableOpacity
-          style={styles.copyButton}
-          onPress={() => copyToClipboard(translation.translation)}
-        >
-          <Text style={styles.copyButtonText}>Copy Translation</Text>
+          
+          <Text style={styles.copyHint}>
+            Click to copy the translation
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -149,6 +136,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#FFFFFF',
   },
   emptyText: {
     fontSize: 16,
@@ -160,49 +148,44 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
     marginBottom: 12,
     color: '#333',
   },
-  languageGridContainer: {
+  languageChipsContainer: {
+    flexDirection: 'row',
     marginBottom: 16,
   },
-  languageRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginBottom: 8,
+  languageChipsContent: {
+    paddingVertical: 4,
   },
-  languageButton: {
-    padding: 12,
+  languageChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 16,
     marginRight: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-    flex: 1,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
   },
-  selectedLanguage: {
-    backgroundColor: '#6200ee',
+  selectedLanguageChip: {
+    backgroundColor: '#6B46C1',
+    borderColor: '#6B46C1',
   },
-  disabledLanguage: {
+  disabledLanguageChip: {
     backgroundColor: '#e0e0e0',
     opacity: 0.6,
   },
-  languageName: {
+  languageChipText: {
     fontSize: 14,
+    color: '#555',
+  },
+  selectedLanguageChipText: {
+    color: '#FFFFFF',
     fontWeight: '500',
-    color: '#333',
   },
-  languageNative: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  selectedLanguageText: {
-    color: '#fff',
-  },
-  disabledLanguageText: {
+  disabledLanguageChipText: {
     color: '#999',
   },
   loadingContainer: {
@@ -221,6 +204,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 20,
   },
   emptyResultText: {
     color: '#666',
@@ -229,18 +213,14 @@ const styles = StyleSheet.create({
   resultContainer: {
     flex: 1,
   },
-  resultTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
-  },
   translationContainer: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
   },
   translationText: {
     fontSize: 16,
@@ -250,15 +230,24 @@ const styles = StyleSheet.create({
   notesContainer: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: 'rgba(98, 0, 238, 0.05)',
+    backgroundColor: 'rgba(107, 70, 193, 0.05)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(98, 0, 238, 0.1)',
+    borderColor: 'rgba(107, 70, 193, 0.2)',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  notesIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  notesTextContainer: {
+    flex: 1,
   },
   notesLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6200ee',
+    color: '#6B46C1',
     marginBottom: 4,
   },
   notesText: {
@@ -266,16 +255,14 @@ const styles = StyleSheet.create({
     color: '#555',
     lineHeight: 20,
   },
-  copyButton: {
-    backgroundColor: '#6200ee',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  copyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+  copyHint: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 12,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
 });
 

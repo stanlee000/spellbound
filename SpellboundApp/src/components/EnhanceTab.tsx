@@ -12,13 +12,13 @@ import { useAppContext } from '../contexts/AppContext';
 
 // Define presets
 const PRESETS = [
-  { id: 'twitter', name: 'Twitter/X', description: 'Short, engaging posts' },
-  { id: 'linkedin', name: 'LinkedIn', description: 'Professional tone' },
-  { id: 'instagram', name: 'Instagram', description: 'Visual, authentic' },
-  { id: 'reddit', name: 'Reddit', description: 'Conversational' },
-  { id: 'hackernews', name: 'Hacker News', description: 'Technical focus' },
-  { id: 'promptBuilder', name: 'Prompt Builder', description: 'AI prompt design' },
-  { id: 'custom', name: 'Custom Tone', description: 'Define your own style' }
+  { id: 'twitter', name: 'X (Twitter)', description: 'Transform your text into an engaging tweet with hashtags', icon: '🐦' },
+  { id: 'linkedin', name: 'LinkedIn', description: 'Craft a professional post focused on business value', icon: '💼' },
+  { id: 'instagram', name: 'Instagram', description: 'Create an authentic and engaging post', icon: '📷' },
+  { id: 'reddit', name: 'Reddit', description: 'Format with clear structure and readability', icon: '📱' },
+  { id: 'hackernews', name: 'Hacker News', description: 'Optimize for technical accuracy and depth', icon: '💻' },
+  { id: 'promptBuilder', name: 'Prompt Builder', description: 'Structure a well-crafted LLM prompt', icon: '✨' },
+  { id: 'custom', name: 'Custom Style', description: 'Define your own tone and style', icon: '✏️' }
 ];
 
 const EnhanceTab: React.FC = () => {
@@ -34,7 +34,6 @@ const EnhanceTab: React.FC = () => {
 
   const [customTone, setCustomTone] = useState('');
   const [additionalContext, setAdditionalContext] = useState('');
-  const [showOptions, setShowOptions] = useState(false);
 
   const handleEnhance = () => {
     if (!selectedPreset || !originalText) return;
@@ -50,90 +49,86 @@ const EnhanceTab: React.FC = () => {
   const renderPresetSelector = () => {
     return (
       <View style={styles.presetContainer}>
-        <Text style={styles.sectionTitle}>Choose an enhancement style:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetScroll}>
+        <Text style={styles.sectionTitle}>
+          Select a preset or customize how you want to enhance your text:
+        </Text>
+        
+        <ScrollView style={styles.presetGrid} contentContainerStyle={styles.presetGridContent}>
           {PRESETS.map(preset => (
             <TouchableOpacity
               key={preset.id}
               style={[
-                styles.presetButton,
-                selectedPreset === preset.id && styles.selectedPreset
+                styles.presetCard,
+                selectedPreset === preset.id && styles.selectedPresetCard
               ]}
-              onPress={() => {
-                setSelectedPreset(preset.id);
-                setShowOptions(preset.id === 'custom');
-              }}
+              onPress={() => setSelectedPreset(preset.id)}
             >
-              <Text
-                style={[
-                  styles.presetButtonText,
-                  selectedPreset === preset.id && styles.selectedPresetText
-                ]}
-              >
-                {preset.name}
-              </Text>
-              <Text
-                style={[
-                  styles.presetDescription,
-                  selectedPreset === preset.id && styles.selectedPresetDescription
-                ]}
-              >
+              <View style={styles.presetHeader}>
+                <Text style={[
+                  styles.presetIcon,
+                  selectedPreset === preset.id && styles.selectedPresetIcon
+                ]}>
+                  {preset.icon}
+                </Text>
+                <Text style={[
+                  styles.presetName,
+                  selectedPreset === preset.id && styles.selectedPresetName
+                ]}>
+                  {preset.name}
+                </Text>
+              </View>
+              
+              <Text style={[
+                styles.presetDescription,
+                selectedPreset === preset.id && styles.selectedPresetDescription
+              ]}>
                 {preset.description}
               </Text>
+              
+              {preset.id === 'custom' && selectedPreset === 'custom' && (
+                <TextInput
+                  style={styles.customToneInput}
+                  value={customTone}
+                  onChangeText={setCustomTone}
+                  placeholder="e.g., formal, casual"
+                  placeholderTextColor="#999"
+                />
+              )}
+              
+              <View style={styles.additionalContextContainer}>
+                <TextInput
+                  style={styles.additionalContextInput}
+                  value={selectedPreset === preset.id ? additionalContext : ''}
+                  onChangeText={setAdditionalContext}
+                  placeholder="Additional context (optional)"
+                  placeholderTextColor="#999"
+                  multiline
+                  numberOfLines={2}
+                />
+              </View>
+              
+              <TouchableOpacity
+                style={[
+                  styles.enhanceButton,
+                  (selectedPreset !== preset.id || 
+                   (preset.id === 'custom' && !customTone) || 
+                   isProcessing
+                  ) && styles.disabledButton
+                ]}
+                onPress={handleEnhance}
+                disabled={selectedPreset !== preset.id || 
+                         (preset.id === 'custom' && !customTone) || 
+                         isProcessing}
+              >
+                <Text style={styles.enhanceButtonText}>
+                  {isProcessing && selectedPreset === preset.id ? 
+                    'Enhancing...' : 
+                    preset.id === 'promptBuilder' ? 'Build Prompt' : 'Apply Style'}
+                </Text>
+              </TouchableOpacity>
             </TouchableOpacity>
           ))}
         </ScrollView>
-
-        {selectedPreset === 'custom' && showOptions && (
-          <View style={styles.customOptions}>
-            <Text style={styles.optionLabel}>Custom Tone:</Text>
-            <TextInput
-              style={styles.textInput}
-              value={customTone}
-              onChangeText={setCustomTone}
-              placeholder="e.g., Professional, Friendly, Academic..."
-              placeholderTextColor="#999"
-            />
-          </View>
-        )}
-
-        {selectedPreset && (
-          <View style={styles.additionalOptionsContainer}>
-            <TouchableOpacity
-              style={styles.expandButton}
-              onPress={() => setShowOptions(!showOptions)}
-            >
-              <Text style={styles.expandButtonText}>
-                {showOptions ? 'Hide Advanced Options' : 'Show Advanced Options'}
-              </Text>
-            </TouchableOpacity>
-
-            {showOptions && (
-              <View style={styles.advancedOptions}>
-                <Text style={styles.optionLabel}>Additional Context:</Text>
-                <TextInput
-                  style={[styles.textInput, styles.multilineInput]}
-                  value={additionalContext}
-                  onChangeText={setAdditionalContext}
-                  placeholder="Add context to improve enhancement quality..."
-                  placeholderTextColor="#999"
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-            )}
-
-            <TouchableOpacity
-              style={styles.enhanceButton}
-              onPress={handleEnhance}
-              disabled={isProcessing}
-            >
-              <Text style={styles.enhanceButtonText}>
-                {isProcessing ? 'Enhancing...' : 'Enhance Text'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     );
   };
@@ -142,40 +137,31 @@ const EnhanceTab: React.FC = () => {
     if (isProcessing) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
+          <ActivityIndicator size="large" color="#6B46C1" />
           <Text style={styles.loadingText}>Enhancing your text...</Text>
         </View>
       );
     }
 
     if (!enhancedText) {
-      return (
-        <View style={styles.emptyResultContainer}>
-          <Text style={styles.emptyResultText}>
-            Select a style above and click "Enhance Text" to transform your text.
-          </Text>
-        </View>
-      );
+      return null;
     }
 
     return (
       <View style={styles.resultContainer}>
-        <Text style={styles.resultTitle}>Enhanced Result:</Text>
-        <ScrollView style={styles.enhancedTextContainer}>
-          <Text style={styles.enhancedText}>{enhancedText}</Text>
-        </ScrollView>
-        <TouchableOpacity
-          style={styles.copyButton}
+        <TouchableOpacity 
+          style={styles.enhancedTextContainer}
           onPress={() => copyToClipboard(enhancedText)}
         >
-          <Text style={styles.copyButtonText}>Copy Enhanced Text</Text>
+          <Text style={styles.enhancedText}>{enhancedText}</Text>
+          <Text style={styles.copyHint}>Click to copy the enhanced text</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {!originalText ? (
         <Text style={styles.emptyText}>
           No text available. Copy text to your clipboard and use the enhance function.
@@ -186,7 +172,7 @@ const EnhanceTab: React.FC = () => {
           {renderResultSection()}
         </>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
@@ -194,6 +180,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#FFFFFF',
   },
   emptyText: {
     fontSize: 16,
@@ -205,144 +192,139 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
-  },
-  presetScroll: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  presetButton: {
-    padding: 12,
-    marginRight: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    minWidth: 120,
-    alignItems: 'center',
-  },
-  selectedPreset: {
-    backgroundColor: '#6200ee',
-  },
-  presetButtonText: {
     fontSize: 16,
     fontWeight: '500',
+    marginBottom: 16,
     color: '#333',
   },
-  selectedPresetText: {
-    color: '#fff',
+  presetGrid: {
+    width: '100%',
+  },
+  presetGridContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+  },
+  presetCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  selectedPresetCard: {
+    backgroundColor: '#F8F9FA',
+    borderColor: '#6B46C1',
+  },
+  presetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  presetIcon: {
+    fontSize: 16,
+    marginRight: 8,
+    color: '#555',
+  },
+  selectedPresetIcon: {
+    color: '#6B46C1',
+  },
+  presetName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  selectedPresetName: {
+    color: '#6B46C1',
   },
   presetDescription: {
     fontSize: 12,
     color: '#666',
-    marginTop: 4,
+    marginBottom: 12,
+    minHeight: 32,
   },
   selectedPresetDescription: {
-    color: '#e0e0e0',
-  },
-  customOptions: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  optionLabel: {
-    fontSize: 14,
-    fontWeight: '500',
     color: '#555',
-    marginBottom: 8,
   },
-  textInput: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 4,
-    padding: 12,
-    fontSize: 16,
+  customToneInput: {
+    backgroundColor: '#F5F5F5',
     borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  multilineInput: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  additionalOptionsContainer: {
-    marginTop: 12,
-  },
-  expandButton: {
-    padding: 12,
-    alignItems: 'center',
+    borderColor: '#E2E8F0',
     borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+    padding: 8,
+    fontSize: 14,
     marginBottom: 12,
   },
-  expandButtonText: {
-    color: '#555',
-    fontWeight: '500',
+  additionalContextContainer: {
+    marginTop: 'auto',
+    marginBottom: 12,
   },
-  advancedOptions: {
-    marginBottom: 16,
+  additionalContextInput: {
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 4,
+    padding: 8,
+    fontSize: 12,
+    minHeight: 60,
+    textAlignVertical: 'top',
   },
   enhanceButton: {
-    backgroundColor: '#6200ee',
-    padding: 16,
+    backgroundColor: '#6B46C1',
     borderRadius: 8,
+    padding: 10,
     alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#9F7AEA',
+    opacity: 0.6,
   },
   enhanceButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   loadingContainer: {
-    flex: 1,
+    padding: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 30,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#555',
   },
-  emptyResultContainer: {
-    padding: 20,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  emptyResultText: {
-    color: '#666',
-    textAlign: 'center',
-  },
   resultContainer: {
-    flex: 1,
-  },
-  resultTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
+    marginTop: 16,
   },
   enhancedTextContainer: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 16,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
   },
   enhancedText: {
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
   },
-  copyButton: {
-    backgroundColor: '#6200ee',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  copyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+  copyHint: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 12,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
 });
 

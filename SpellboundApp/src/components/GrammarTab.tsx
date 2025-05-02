@@ -15,6 +15,7 @@ const GrammarTab: React.FC = () => {
     corrections,
     isProcessing,
     languageInfo,
+    languageSpecificSuggestions,
     copyToClipboard
   } = useAppContext();
 
@@ -28,62 +29,79 @@ const GrammarTab: React.FC = () => {
       );
     }
 
-    if (corrections.length === 0 && !isProcessing) {
+    if (isProcessing) {
       return (
-        <View style={styles.resultContainer}>
-          <Text style={styles.goodText}>✓ No grammar or spelling issues found.</Text>
-          {languageInfo && (
-            <Text style={styles.languageInfo}>
-              Language detected: {languageInfo.name} ({languageInfo.native})
-            </Text>
-          )}
-          <Text style={styles.originalText}>{originalText}</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6B46C1" />
+          <Text style={styles.loadingText}>Checking your text...</Text>
         </View>
       );
     }
 
     return (
-      <View style={styles.resultContainer}>
-        <Text style={styles.sectionTitle}>Corrections ({corrections.length})</Text>
-        <ScrollView style={styles.correctionsContainer}>
-          {corrections.map((correction, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.correctionItem}
-              onPress={() => {
-                // In a more complete implementation, this would apply the correction
-                console.log('Apply correction:', correction);
-              }}
-            >
-              <Text style={styles.originalTextHighlight}>{correction.original}</Text>
-              <Text style={styles.arrow}>→</Text>
-              <Text style={styles.suggestionText}>{correction.suggestion}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
+      <ScrollView style={styles.container}>
+        <Text style={styles.instructionText}>
+          Click on the highlighted text below to apply each suggestion. The corrected text will be automatically copied to your clipboard.
+        </Text>
+        
         <TouchableOpacity
-          style={styles.copyButton}
+          style={styles.textContainer}
           onPress={() => copyToClipboard(originalText)}
         >
-          <Text style={styles.copyButtonText}>Copy Text</Text>
+          {corrections.length === 0 ? (
+            <Text style={styles.correctedText}>{originalText}</Text>
+          ) : (
+            renderTextWithCorrections()
+          )}
+          
+          <Text style={styles.copyHint}>
+            Click anywhere to copy the entire text
+          </Text>
         </TouchableOpacity>
+        
+        {languageSpecificSuggestions && languageSpecificSuggestions.length > 0 && (
+          <View style={styles.languageSpecificContainer}>
+            <Text style={styles.languageSpecificTitle}>
+              Language-Specific Suggestions
+            </Text>
+            {languageSpecificSuggestions.map((suggestion, index) => (
+              <View key={index} style={styles.suggestionItem}>
+                <Text style={styles.infoIcon}>ℹ️</Text>
+                <Text style={styles.suggestionText}>{suggestion}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+  
+  const renderTextWithCorrections = () => {
+    // Simplified rendering of text with corrections
+    // In a real implementation, you'd need to handle this more carefully,
+    // potentially using a custom Text component that can handle inline styling
+    return (
+      <View style={styles.correctionContainer}>
+        {corrections.map((correction, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.correctionItem}
+            onPress={() => {
+              // Replace the text and copy to clipboard
+              const newText = originalText.replace(correction.original, correction.suggestion);
+              copyToClipboard(newText);
+            }}
+          >
+            <Text style={styles.correctionOriginal}>{correction.original}</Text>
+            <Text style={styles.correctionArrow}>→</Text>
+            <Text style={styles.correctionSuggestion}>{correction.suggestion}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
     );
   };
 
-  return (
-    <View style={styles.container}>
-      {isProcessing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
-          <Text style={styles.loadingText}>Checking grammar and spelling...</Text>
-        </View>
-      ) : (
-        renderCorrectedText()
-      )}
-    </View>
-  );
+  return renderCorrectedText();
 };
 
 const styles = StyleSheet.create({
@@ -95,6 +113,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   loadingText: {
     marginTop: 16,
@@ -107,73 +126,93 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  resultContainer: {
-    flex: 1,
-  },
-  goodText: {
-    fontSize: 16,
-    color: '#4caf50',
-    marginBottom: 16,
-    fontWeight: '600',
-  },
-  languageInfo: {
+  instructionText: {
     fontSize: 14,
     color: '#666',
     marginBottom: 16,
-    fontStyle: 'italic',
+    lineHeight: 20,
   },
-  originalText: {
+  textContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  correctedText: {
     fontSize: 16,
     lineHeight: 24,
     color: '#333',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
+  copyHint: {
+    textAlign: 'center',
+    color: '#999',
+    fontSize: 12,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
   },
-  correctionsContainer: {
-    flex: 1,
+  correctionContainer: {
     marginBottom: 16,
   },
   correctionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8f8f8',
+    padding: 12,
+    backgroundColor: '#F8F9FA',
     borderRadius: 8,
     marginBottom: 8,
   },
-  originalTextHighlight: {
+  correctionOriginal: {
     fontSize: 16,
-    color: '#e53935',
-    textDecorationLine: 'line-through',
+    color: '#EF4444',
     flex: 1,
+    textDecorationLine: 'line-through',
+    paddingHorizontal: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(239, 68, 68, 0.5)',
   },
-  arrow: {
-    fontSize: 18,
+  correctionArrow: {
+    fontSize: 16,
     color: '#666',
-    marginHorizontal: 12,
+    marginHorizontal: 8,
+  },
+  correctionSuggestion: {
+    fontSize: 16,
+    color: '#4ADE80',
+    flex: 1,
+    fontWeight: '500',
+  },
+  languageSpecificContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  languageSpecificTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  infoIcon: {
+    fontSize: 16,
+    marginRight: 8,
   },
   suggestionText: {
-    fontSize: 16,
-    color: '#4caf50',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
     flex: 1,
-  },
-  copyButton: {
-    backgroundColor: '#6200ee',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  copyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
   },
 });
 

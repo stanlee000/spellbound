@@ -3,26 +3,27 @@ import Clipboard from '@react-native-clipboard/clipboard';
 /**
  * Utility class for handling clipboard operations
  */
-class ClipboardManager {
+const clipboardManager = {
   /**
    * Get text from clipboard
-   * @returns {Promise<string>} Clipboard content
+   * @returns {Promise<string>} Text from clipboard
    */
-  async getClipboardText(): Promise<string> {
+  getClipboardText: async (): Promise<string> => {
     try {
-      return await Clipboard.getString();
+      const text = await Clipboard.getString();
+      return text || '';
     } catch (error) {
       console.error('Error getting clipboard text:', error);
       return '';
     }
-  }
+  },
 
   /**
    * Set text to clipboard
-   * @param {string} text - Text to copy to clipboard
+   * @param {string} text - Text to set to clipboard
    * @returns {Promise<boolean>} Success status
    */
-  async setClipboardText(text: string): Promise<boolean> {
+  setClipboardText: async (text: string): Promise<boolean> => {
     try {
       Clipboard.setString(text);
       return true;
@@ -31,7 +32,6 @@ class ClipboardManager {
       return false;
     }
   }
-}
+};
 
-// Export as singleton
-export default new ClipboardManager(); 
+export default clipboardManager; 

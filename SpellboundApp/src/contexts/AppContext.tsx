@@ -24,6 +24,8 @@ type AppContextType = {
   setLanguageInfo: (info: any) => void;
   corrections: Array<{ original: string, suggestion: string }>;
   setCorrections: (corrections: Array<{ original: string, suggestion: string }>) => void;
+  languageSpecificSuggestions: Array<string>;
+  setLanguageSpecificSuggestions: (suggestions: Array<string>) => void;
   enhancedText: string;
   setEnhancedText: (text: string) => void;
   selectedPreset: string | null;
@@ -54,6 +56,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeTab, setActiveTab] = useState<number>(0);
   const [languageInfo, setLanguageInfo] = useState<any>(null);
   const [corrections, setCorrections] = useState<Array<{ original: string, suggestion: string }>>([]);
+  const [languageSpecificSuggestions, setLanguageSpecificSuggestions] = useState<Array<string>>([]);
   const [enhancedText, setEnhancedText] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [translation, setTranslation] = useState<{ translation: string, notes: string } | null>(null);
@@ -125,6 +128,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setProcessedText(text);
       setLanguageInfo(result.language);
       setCorrections(result.corrections || []);
+      setLanguageSpecificSuggestions(result.languageSpecific || []);
       setActiveTab(0);
     } catch (error) {
       console.error('Error checking grammar:', error);
@@ -193,6 +197,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLanguageInfo,
     corrections,
     setCorrections,
+    languageSpecificSuggestions,
+    setLanguageSpecificSuggestions,
     enhancedText,
     setEnhancedText,
     selectedPreset,

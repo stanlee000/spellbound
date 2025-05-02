@@ -1,5 +1,6 @@
 import { Linking } from 'react-native';
 import { useEffect } from 'react';
+import { useAppContext } from '../contexts/AppContext';
 
 /**
  * Parse URL parameters from a deep link URL
@@ -23,43 +24,72 @@ export const parseUrlParams = (url: string): { [key: string]: string } => {
 };
 
 /**
- * Custom hook to handle app linking
- * @param onReceiveText Callback to handle received text from deep link
+ * Custom hook to handle deep linking
+ * @param onReceiveText - Callback for when text is received from a deep link
  */
-export const useLinkingHandler = (onReceiveText: (text: string) => void) => {
-  // Handle initial URL that launched the app
-  useEffect(() => {
-    const getInitialURL = async () => {
-      try {
-        const initialUrl = await Linking.getInitialURL();
-        if (initialUrl) {
-          handleUrl(initialUrl);
-        }
-      } catch (error) {
-        console.error('Error getting initial URL:', error);
+export const useLinkingHandler = (onReceiveText?: (text: string) => void) => {
+  const { 
+    checkGrammar, 
+    enhanceText, 
+    translateText, 
+    setActiveTab 
+  } = useAppContext();
+
+  // Handle deep links
+  const handleDeepLink = (url: string) => {
+    const route = url.replace(/.*?:\/\//g, '');
+    const routeParts = route.split('/');
+    
+    if (routeParts[0] === 'grammar') {
+      setActiveTab(0);
+      // Extract text from link if available
+      if (routeParts.length > 1) {
+        const text = decodeURIComponent(routeParts[1]);
+        checkGrammar(text);
+        if (onReceiveText) onReceiveText(text);
       }
-    };
-    
-    getInitialURL();
-    
-    // Listen for new URLs while the app is running
-    const linkingListener = Linking.addEventListener('url', ({ url }) => {
-      handleUrl(url);
-    });
-    
-    return () => {
-      linkingListener.remove();
-    };
-  }, []);
-  
-  // Process URL and extract text
-  const handleUrl = (url: string) => {
-    if (url.startsWith('spellbound://')) {
-      const params = parseUrlParams(url);
-      
-      if (params.text) {
-        onReceiveText(decodeURIComponent(params.text));
+    } else if (routeParts[0] === 'enhance') {
+      setActiveTab(1);
+      // Extract text and preset if available
+      if (routeParts.length > 1) {
+        const text = decodeURIComponent(routeParts[1]);
+        const preset = routeParts.length > 2 ? routeParts[2] : 'general';
+        enhanceText(text, preset);
+        if (onReceiveText) onReceiveText(text);
+      }
+    } else if (routeParts[0] === 'translate') {
+      setActiveTab(2);
+      // Extract text and target language if available
+      if (routeParts.length > 1) {
+        const text = decodeURIComponent(routeParts[1]);
+        const targetLanguage = routeParts.length > 2 ? routeParts[2] : 'English';
+        translateText(text, targetLanguage);
+        if (onReceiveText) onReceiveText(text);
+      }
+    } else if (routeParts[0] === 'text') {
+      // Generic text sharing
+      if (routeParts.length > 1) {
+        const text = decodeURIComponent(routeParts[1]);
+        if (onReceiveText) onReceiveText(text);
       }
     }
   };
+
+  useEffect(() => {
+    // Handle deep link when app is already open
+    const linkingEventListener = Linking.addEventListener('url', (event) => {
+      handleDeepLink(event.url);
+    });
+
+    // Handle deep link when app is opened from a link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink(url);
+      }
+    });
+
+    return () => {
+      linkingEventListener.remove();
+    };
+  }, []);
 }; 
