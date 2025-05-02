@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		040D4B142DC3C3E3003DBF7D /* Spellbound.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 040D4AFB2DC3C3E2003DBF7D /* Spellbound.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		045CC0572DC3A8A3000D8A98 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045CC0562DC3A8A3000D8A98 /* AppDelegate.swift */; };
 		045CC05B2DC3A8A3000D8A98 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 045CC0592DC3A8A3000D8A98 /* Main.html */; };
 		045CC05D2DC3A8A3000D8A98 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 045CC05C2DC3A8A3000D8A98 /* Icon.png */; };
@@ -31,6 +32,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		040D4B122DC3C3E3003DBF7D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 045CC04B2DC3A8A3000D8A98 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 040D4AFA2DC3C3E2003DBF7D;
+			remoteInfo = Spellbound;
+		};
 		045CC0712DC3A8A4000D8A98 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 045CC04B2DC3A8A3000D8A98 /* Project object */;
@@ -61,6 +69,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				040D4B142DC3C3E3003DBF7D /* Spellbound.appex in Embed Foundation Extensions */,
 				045CC0872DC3A8A4000D8A98 /* safari-extension Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -69,6 +78,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		040D4AFB2DC3C3E2003DBF7D /* Spellbound.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Spellbound.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		045CC0532DC3A8A3000D8A98 /* safari-extension.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "safari-extension.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		045CC0562DC3A8A3000D8A98 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		045CC05A2DC3A8A3000D8A98 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -101,6 +111,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		040D4AF82DC3C3E2003DBF7D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		045CC0502DC3A8A3000D8A98 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -150,6 +167,7 @@
 				045CC0702DC3A8A4000D8A98 /* safari-extensionTests.xctest */,
 				045CC07A2DC3A8A4000D8A98 /* safari-extensionUITests.xctest */,
 				045CC0862DC3A8A4000D8A98 /* safari-extension Extension.appex */,
+				040D4AFB2DC3C3E2003DBF7D /* Spellbound.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -227,6 +245,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		040D4AFA2DC3C3E2003DBF7D /* Spellbound */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 040D4B182DC3C3E3003DBF7D /* Build configuration list for PBXNativeTarget "Spellbound" */;
+			buildPhases = (
+				040D4AF72DC3C3E2003DBF7D /* Sources */,
+				040D4AF82DC3C3E2003DBF7D /* Frameworks */,
+				040D4AF92DC3C3E2003DBF7D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Spellbound;
+			packageProductDependencies = (
+			);
+			productName = Spellbound;
+			productReference = 040D4AFB2DC3C3E2003DBF7D /* Spellbound.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		045CC0522DC3A8A3000D8A98 /* safari-extension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 045CC0952DC3A8A4000D8A98 /* Build configuration list for PBXNativeTarget "safari-extension" */;
@@ -240,6 +277,7 @@
 			);
 			dependencies = (
 				045CC0892DC3A8A4000D8A98 /* PBXTargetDependency */,
+				040D4B132DC3C3E3003DBF7D /* PBXTargetDependency */,
 			);
 			name = "safari-extension";
 			packageProductDependencies = (
@@ -317,6 +355,9 @@
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
+					040D4AFA2DC3C3E2003DBF7D = {
+						CreatedOnToolsVersion = 16.3;
+					};
 					045CC0522DC3A8A3000D8A98 = {
 						CreatedOnToolsVersion = 16.3;
 					};
@@ -351,11 +392,19 @@
 				045CC06F2DC3A8A4000D8A98 /* safari-extensionTests */,
 				045CC0792DC3A8A4000D8A98 /* safari-extensionUITests */,
 				045CC0852DC3A8A4000D8A98 /* safari-extension Extension */,
+				040D4AFA2DC3C3E2003DBF7D /* Spellbound */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		040D4AF92DC3C3E2003DBF7D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		045CC0512DC3A8A3000D8A98 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -401,6 +450,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		040D4AF72DC3C3E2003DBF7D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		045CC04F2DC3A8A3000D8A98 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -438,6 +494,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		040D4B132DC3C3E3003DBF7D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 040D4AFA2DC3C3E2003DBF7D /* Spellbound */;
+			targetProxy = 040D4B122DC3C3E3003DBF7D /* PBXContainerItemProxy */;
+		};
 		045CC0722DC3A8A4000D8A98 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 045CC0522DC3A8A3000D8A98 /* safari-extension */;
@@ -475,6 +536,70 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		040D4B152DC3C3E3003DBF7D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Spellbound/Spellbound.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3WVYM73M92;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Spellbound/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Spellbound;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Spellbound.safari-extension.Spellbound";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		040D4B162DC3C3E3003DBF7D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Spellbound/Spellbound.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3WVYM73M92;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Spellbound/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Spellbound;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Spellbound.safari-extension.Spellbound";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		045CC08F2DC3A8A4000D8A98 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -812,6 +937,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		040D4B182DC3C3E3003DBF7D /* Build configuration list for PBXNativeTarget "Spellbound" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				040D4B152DC3C3E3003DBF7D /* Debug */,
+				040D4B162DC3C3E3003DBF7D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		045CC04E2DC3A8A3000D8A98 /* Build configuration list for PBXProject "safari-extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
