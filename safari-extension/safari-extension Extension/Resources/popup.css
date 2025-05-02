@@ -22,7 +22,6 @@
 body {
   width: 450px;
   max-height: 600px;
-  overflow: hidden;
   background-color: var(--background-light);
   color: var(--text-primary);
   font-size: 14px;
@@ -37,7 +36,6 @@ body {
   height: 100%;
   background-color: var(--background-color);
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 

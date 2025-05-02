@@ -1251,9 +1251,55 @@ async function translateText(targetLanguage) {
 
 // Copy text to clipboard
 function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).catch(err => {
-    console.error('Failed to copy text: ', err);
-  });
+  try {
+    navigator.clipboard.writeText(text)
+      .catch(err => {
+        console.error('Failed to copy text with Clipboard API: ', err);
+        // Fallback method for Safari
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        // Make the textarea out of viewport
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand('copy');
+          if (!successful) {
+            console.error('Fallback clipboard copy failed');
+          }
+        } catch (err) {
+          console.error('Fallback clipboard error: ', err);
+        }
+        
+        document.body.removeChild(textArea);
+      });
+  } catch (err) {
+    console.error('Clipboard API not supported: ', err);
+    // Direct fallback if Clipboard API is not available
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (!successful) {
+        console.error('Fallback clipboard copy failed');
+      }
+    } catch (err) {
+      console.error('Fallback clipboard error: ', err);
+    }
+    
+    document.body.removeChild(textArea);
+  }
 }
 
 // Show notification
