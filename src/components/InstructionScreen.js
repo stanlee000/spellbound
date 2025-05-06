@@ -18,6 +18,56 @@ const InstructionBox = styled(Box)(({ theme }) => ({
 const InstructionScreen = ({ settings, onSettingsClick }) => {
   const theme = useTheme();
   
+  // Format shortcut text for display
+  const formatShortcut = (shortcutString) => {
+    if (!shortcutString) return null;
+    
+    // For Mac, replace CommandOrControl with the Command key icon
+    if (navigator.platform.includes('Mac') && shortcutString.includes('CommandOrControl')) {
+      const parts = shortcutString.split('+');
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+          {parts.slice(1).map((part, index) => (
+            <React.Fragment key={index}>
+              <span style={{ marginLeft: 4, marginRight: 4 }}>+</span>
+              {part.trim()}
+            </React.Fragment>
+          ))}
+        </Box>
+      );
+    }
+    
+    // For non-Mac, replace CommandOrControl with Ctrl
+    return shortcutString.replace('CommandOrControl', 'Ctrl').replace(/\+/g, ' + ');
+  };
+  
+  // Get grammar shortcut or use default
+  const grammarShortcut = settings && settings.hotkey ? 
+    formatShortcut(settings.hotkey) : 
+    navigator.platform.includes('Mac') ? 
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+        <span style={{ marginLeft: 4, marginRight: 4 }}>+</span>
+        Shift
+        <span style={{ marginLeft: 4, marginRight: 4 }}>+</span>
+        C
+      </Box> : 
+      'Ctrl + Shift + C';
+      
+  // Get translation shortcut or use default
+  const translationShortcut = settings && settings.translationHotkey ? 
+    formatShortcut(settings.translationHotkey) : 
+    navigator.platform.includes('Mac') ? 
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+        <span style={{ marginLeft: 4, marginRight: 4 }}>+</span>
+        Shift
+        <span style={{ marginLeft: 4, marginRight: 4 }}>+</span>
+        T
+      </Box> : 
+      'Ctrl + Shift + T';
+  
   return (
     <InstructionBox>
       <Box sx={{ mb: 3 }}>
@@ -83,8 +133,12 @@ const InstructionScreen = ({ settings, onSettingsClick }) => {
               }}
             >
               {navigator.platform.includes('Mac') ? 
-                <><KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }}/> + C</> : 
-                'Ctrl+C'
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }} />
+                  <span style={{ marginLeft: 4, marginRight: 4 }}>+</span>
+                  C
+                </Box> : 
+                'Ctrl + C'
               }
             </Box>
           </Typography>
@@ -130,10 +184,7 @@ const InstructionScreen = ({ settings, onSettingsClick }) => {
                 backgroundColor: 'rgba(107, 70, 193, 0.05)'
               }}
             >
-              {navigator.platform.includes('Mac') ? 
-                  <><KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }}/> + Shift + C</> : 
-                  'Ctrl+Shift+C'
-              }
+              {grammarShortcut}
             </Box>
           </Typography>
         </Paper>
@@ -177,9 +228,7 @@ const InstructionScreen = ({ settings, onSettingsClick }) => {
                 backgroundColor: 'rgba(107, 70, 193, 0.05)'
               }}
             >
-              {navigator.platform.includes('Mac') ? 
-                  <><KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }}/> + Shift + T</> : 
-                  'Ctrl+Shift+T'}
+              {translationShortcut}
             </Box>
           </Typography>
         </Paper>

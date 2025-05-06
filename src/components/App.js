@@ -74,7 +74,8 @@ const App = () => {
   const [settings, setSettings] = useState({
     apiKey: '',
     model: 'gpt-4.1', // default model
-    hotkey: ''
+    hotkey: '',
+    translationHotkey: ''
   });
   const [availableModels, setAvailableModels] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -106,6 +107,7 @@ const App = () => {
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
   const [translationTarget, setTranslationTarget] = useState('');
   const [platform, setPlatform] = useState('Windows');
+  const [isRecordingTranslationHotkey, setIsRecordingTranslationHotkey] = useState(false);
 
   useEffect(() => {
     // Detect platform
@@ -391,12 +393,55 @@ const App = () => {
 
   const handleSettingsSave = async () => {
     try {
-      await window.electron.ipcRenderer.invoke('save-settings', settings);
-      setNotification('Settings saved successfully!');
-    setSettingsOpen(false);
+      // Save settings first
+      await window.electron.ipcRenderer.invoke('save-settings', {
+        ...settings,
+        hasSeenInstructions: true
+      });
+      
+      // Call update-shortcuts explicitly with the current settings
+      console.log('Updating shortcuts immediately with:', settings.hotkey, settings.translationHotkey);
+      let shortcutsUpdated = false;
+      
+      try {
+        const result = await window.electron.ipcRenderer.invoke('update-shortcuts', {
+          grammarHotkey: settings.hotkey,
+          translationHotkey: settings.translationHotkey
+        });
+        
+        shortcutsUpdated = result && (typeof result === 'object' ? result.success : result);
+        
+        if (result && typeof result === 'object') {
+          if (result.success) {
+            setNotification('Settings saved and shortcuts updated successfully');
+          } else {
+            let message = 'Settings saved but some shortcuts could not be updated:';
+            if (result.grammar && !result.grammar.success) {
+              message += ` Grammar shortcut (${settings.hotkey}) failed.`;
+            }
+            if (result.translation && !result.translation.success) {
+              message += ` Translation shortcut (${settings.translationHotkey}) failed.`;
+            }
+            if (result.error) {
+              message += ` Error: ${result.error}`;
+            }
+            setNotification(message);
+          }
+        } else {
+          setNotification(shortcutsUpdated ? 
+            'Settings saved successfully' : 
+            'Settings saved but shortcuts could not be updated - restart may be required');
+        }
+      } catch (shortcutError) {
+        console.error('Error updating shortcuts:', shortcutError);
+        setNotification('Settings saved but shortcuts could not be updated: ' + shortcutError.message);
+      }
+      
+      setSettingsOpen(false);
+      
     } catch (error) {
       console.error('Error saving settings:', error);
-      setNotification(`Failed to save settings: ${error.message}`);
+      setNotification('Error saving settings: ' + error.message);
     }
   };
 
@@ -424,6 +469,126 @@ const App = () => {
       // Clear the API key in the main process if input is empty
       await window.electron.ipcRenderer.invoke('set-api-key', '');
     }
+  };
+
+  const handleRecordHotkey = () => {
+    if (isRecordingTranslationHotkey) return; // Don't allow multiple recordings at once
+    
+    setIsRecordingHotkey(true);
+    
+    const handleKeyDown = (e) => {
+      e.preventDefault();
+      
+      // Get valid hotkeys
+      window.electron.ipcRenderer.invoke('get-valid-hotkeys').then(validHotkeys => {
+        const { modifiers, keys } = validHotkeys;
+        
+        // Check if required modifiers and key are pressed
+        const pressedModifiers = [];
+        if (e.ctrlKey) pressedModifiers.push('Control');
+        if (e.metaKey) pressedModifiers.push('Command');
+        if (e.shiftKey) pressedModifiers.push('Shift');
+        if (e.altKey) pressedModifiers.push('Alt');
+        
+        const key = e.key.toUpperCase();
+        
+        // Validate that at least one modifier and one key are pressed
+        if (pressedModifiers.length > 0 && keys.includes(key)) {
+          // Format the hotkey
+          let hotkey = '';
+          
+          // Use CommandOrControl for cross-platform compatibility
+          if (pressedModifiers.includes('Control') || pressedModifiers.includes('Command')) {
+            hotkey += 'CommandOrControl';
+          } else if (pressedModifiers.includes('Alt')) {
+            hotkey += 'Alt';
+          }
+          
+          if (pressedModifiers.includes('Shift')) {
+            hotkey += hotkey.length > 0 ? '+Shift' : 'Shift';
+          }
+          
+          hotkey += `+${key}`;
+          
+          // Update settings
+          setSettings(prev => ({ ...prev, hotkey: hotkey }));
+          setIsRecordingHotkey(false);
+          
+          // Remove event listener
+          window.removeEventListener('keydown', handleKeyDown);
+        }
+      });
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Timeout to cancel recording after 5 seconds
+    setTimeout(() => {
+      if (isRecordingHotkey) {
+        setIsRecordingHotkey(false);
+        window.removeEventListener('keydown', handleKeyDown);
+      }
+    }, 5000);
+  };
+
+  const handleRecordTranslationHotkey = () => {
+    if (isRecordingHotkey) return; // Don't allow multiple recordings at once
+    
+    setIsRecordingTranslationHotkey(true);
+    
+    const handleKeyDown = (e) => {
+      e.preventDefault();
+      
+      // Get valid hotkeys
+      window.electron.ipcRenderer.invoke('get-valid-hotkeys').then(validHotkeys => {
+        const { modifiers, keys } = validHotkeys;
+        
+        // Check if required modifiers and key are pressed
+        const pressedModifiers = [];
+        if (e.ctrlKey) pressedModifiers.push('Control');
+        if (e.metaKey) pressedModifiers.push('Command');
+        if (e.shiftKey) pressedModifiers.push('Shift');
+        if (e.altKey) pressedModifiers.push('Alt');
+        
+        const key = e.key.toUpperCase();
+        
+        // Validate that at least one modifier and one key are pressed
+        if (pressedModifiers.length > 0 && keys.includes(key)) {
+          // Format the hotkey
+          let hotkey = '';
+          
+          // Use CommandOrControl for cross-platform compatibility
+          if (pressedModifiers.includes('Control') || pressedModifiers.includes('Command')) {
+            hotkey += 'CommandOrControl';
+          } else if (pressedModifiers.includes('Alt')) {
+            hotkey += 'Alt';
+          }
+          
+          if (pressedModifiers.includes('Shift')) {
+            hotkey += hotkey.length > 0 ? '+Shift' : 'Shift';
+          }
+          
+          hotkey += `+${key}`;
+          
+          // Update settings
+          setSettings(prev => ({ ...prev, translationHotkey: hotkey }));
+          setIsRecordingTranslationHotkey(false);
+          
+          // Remove event listener
+          window.removeEventListener('keydown', handleKeyDown);
+        }
+      });
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Timeout to cancel recording after 5 seconds
+    setTimeout(() => {
+      if (isRecordingTranslationHotkey) {
+        setIsRecordingTranslationHotkey(false);
+        window.removeEventListener('keydown', handleKeyDown);
+      }
+    }, 5000);
   };
 
   const renderTextWithCorrections = (text, correctionsList, onCorrectionClick) => {
@@ -619,14 +784,16 @@ const App = () => {
       </ContentBox>
 
       <SettingsDialogComponent
-        open={settingsOpen} 
+        open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onApiKeyChange={handleApiKeyChange}
         availableModels={availableModels}
         onModelChange={handleModelChange}
         isRecordingHotkey={isRecordingHotkey}
-        onRecordHotkeyClick={() => setIsRecordingHotkey(true)} // Pass simplified click handler
+        isRecordingTranslationHotkey={isRecordingTranslationHotkey}
+        onRecordHotkeyClick={handleRecordHotkey}
+        onRecordTranslationHotkeyClick={handleRecordTranslationHotkey}
         onSave={handleSettingsSave}
         platform={platform}
       />

@@ -85,14 +85,32 @@ app.whenReady().then(() => {
     }
   });
   
+  // Load settings for shortcuts
+  const settings = settingsService.loadSettings();
+  
   // Set up shortcut callbacks
   const shortcutCallbacks = {
     grammarCheck: handleGrammarCheckShortcut,
     translation: handleTranslationShortcut
   };
   
-  // Register shortcuts
-  shortcutService.registerShortcuts(shortcutCallbacks);
+  // Get the electron module
+  const { globalShortcut } = require('electron');
+  
+  // IMPORTANT: First completely unregister all existing shortcuts
+  console.log('Initializing shortcuts...');
+  globalShortcut.unregisterAll();
+  
+  // Register grammar check shortcut
+  const grammarHotkey = settings.hotkey || 'CommandOrControl+Shift+C';
+  const grammarSuccess = globalShortcut.register(grammarHotkey, handleGrammarCheckShortcut);
+  console.log(`Grammar shortcut registration ${grammarSuccess ? 'successful' : 'failed'}: ${grammarHotkey}`);
+  
+  // Register translation shortcut
+  const translationHotkey = settings.translationHotkey || 'CommandOrControl+Shift+T';
+  const translationSuccess = globalShortcut.register(translationHotkey, handleTranslationShortcut);
+  console.log(`Translation shortcut registration ${translationSuccess ? 'successful' : 'failed'}: ${translationHotkey}`);
+  
   console.log('Shortcuts registered');
   
   // Set up IPC handlers
