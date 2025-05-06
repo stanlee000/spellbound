@@ -16,6 +16,7 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac --universal --publish always",
+    "dist:mac:dev": "webpack --mode production && electron-builder --mac --x64",
     "dist:win": "electron-builder --win --publish always",
     "dist:linux": "electron-builder --linux --publish always",
     "test:build": "npm run build && npm run pack",
@@ -123,8 +124,13 @@
       "maintainer": "Stan Kharlap <bond9555@gmail.com>"
     },
     "files": [
-      "**/*",
-      "src/assets/*"
+      "src/**/*",
+      "!SpellboundApp/**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples,docs}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
     ],
     "publish": {
       "provider": "github",

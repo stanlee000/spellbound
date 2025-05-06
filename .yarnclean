@@ -1,0 +1,50 @@
+# React Native related packages
+react-native*
+react-native-*
+**/react-native*
+**/react-native-*
+
+# Test directories
+__tests__
+test
+tests
+powered-test
+
+# Asset directories
+docs
+doc
+website
+images
+assets
+
+# Examples
+example
+examples
+
+# Code coverage directories
+coverage
+.nyc_output
+
+# Build scripts
+Makefile
+Gulpfile.js
+Gruntfile.js
+
+# Configs
+appveyor.yml
+circle.yml
+codeship-services.yml
+codeship-steps.yml
+wercker.yml
+.tern-project
+.gitattributes
+.editorconfig
+.*ignore
+.eslintrc
+.jshintrc
+.flowconfig
+.documentup.json
+.yarn-metadata.json
+
+# Misc
+*.md 

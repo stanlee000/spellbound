@@ -1,0 +1,26 @@
+# Exclude the React Native app completely
+SpellboundApp/
+**/SpellboundApp/
+
+# Development files
+node_modules/
+.idea/
+.vscode/
+*.log
+*.lock
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.map
+
+# Test files
+__tests__/
+*.test.js
+*.spec.js
+
+# Documentation
+docs/
+*.md
+LICENSE 
