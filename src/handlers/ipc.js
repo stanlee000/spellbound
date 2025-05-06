@@ -11,7 +11,7 @@ const windowManager = require('../ui/window');
  */
 function setupIpcHandlers(checkSelectedText) {
   // OpenAI API key handling
-  ipcMain.handle('get-api-key', () => {
+  ipcMain.handle('get-api-key', async () => {
     return settingsService.getApiKey();
   });
 
@@ -108,27 +108,22 @@ function setupIpcHandlers(checkSelectedText) {
   });
 
   // Settings handling
-  ipcMain.handle('save-settings', (event, settings) => {
-    const oldSettings = settingsService.loadSettings();
-    
-    // If hotkey changed, try to register the new one
-    if (settings.hotkey && settings.hotkey !== oldSettings.hotkey) {
-      const success = shortcutService.registerHotkey(settings.hotkey, () => {
-        checkSelectedText(false);
-      });
-      
-      if (!success) {
-        // If registration failed, keep the old hotkey
-        settings.hotkey = oldSettings.hotkey;
-        const mainWindow = windowManager.getMainWindow();
-        if (mainWindow) {
-          mainWindow.webContents.send('show-notification', 'Failed to register hotkey. Please try a different combination.');
-        }
+  ipcMain.handle('save-settings', async (event, settings) => {
+    try {
+      if (settings.apiKey) {
+        settingsService.setApiKey(settings.apiKey);
       }
+      
+      if (settings.model) {
+        settingsService.setCurrentModel(settings.model);
+      }
+      
+      settingsService.saveSettings(settings);
+      return true;
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      return false;
     }
-    
-    settingsService.saveSettings(settings);
-    return true;
   });
 
   ipcMain.handle('load-settings', () => {
@@ -180,6 +175,106 @@ function setupIpcHandlers(checkSelectedText) {
     } catch (error) {
       console.error('Translation error:', error);
       throw error;
+    }
+  });
+
+  // Add handler for updating shortcuts
+  ipcMain.handle('update-shortcuts', async (event, shortcutData) => {
+    try {
+      if (!shortcutData) {
+        console.error('No shortcut data provided');
+        return {
+          success: false,
+          error: 'No shortcut data provided'
+        };
+      }
+      
+      const { grammarHotkey, translationHotkey } = shortcutData;
+      
+      console.log(`Updating shortcuts - Grammar: ${grammarHotkey}, Translation: ${translationHotkey}`);
+      
+      // Get the electron module
+      const { globalShortcut } = require('electron');
+      
+      // IMPORTANT: First completely unregister all existing shortcuts
+      console.log('Unregistering all existing shortcuts');
+      globalShortcut.unregisterAll();
+      
+      let grammarSuccess = false;
+      let translationSuccess = false;
+      
+      // Register grammar check shortcut if provided
+      if (grammarHotkey) {
+        try {
+          console.log(`Attempting to register grammar shortcut: ${grammarHotkey}`);
+          // Use a wrapper function to ensure proper closure
+          const grammarCallback = () => {
+            console.log('Grammar shortcut triggered');
+            if (checkSelectedText) {
+              checkSelectedText(false);
+            }
+          };
+          
+          grammarSuccess = globalShortcut.register(grammarHotkey, grammarCallback);
+          console.log(`Grammar shortcut registration ${grammarSuccess ? 'successful' : 'failed'}: ${grammarHotkey}`);
+          
+          if (!grammarSuccess) {
+            console.error(`Failed to register grammar shortcut: ${grammarHotkey}`);
+          }
+        } catch (grammarError) {
+          console.error(`Error registering grammar shortcut: ${grammarError.message}`);
+        }
+      }
+      
+      // Register translation shortcut if provided
+      if (translationHotkey) {
+        try {
+          console.log(`Attempting to register translation shortcut: ${translationHotkey}`);
+          // Use a wrapper function to ensure proper closure
+          const translationCallback = () => {
+            console.log('Translation shortcut triggered');
+            const mainWindow = windowManager.getMainWindow();
+            if (mainWindow) {
+              mainWindow.webContents.send('show-language-selector');
+            }
+          };
+          
+          translationSuccess = globalShortcut.register(translationHotkey, translationCallback);
+          console.log(`Translation shortcut registration ${translationSuccess ? 'successful' : 'failed'}: ${translationHotkey}`);
+          
+          if (!translationSuccess) {
+            console.error(`Failed to register translation shortcut: ${translationHotkey}`);
+          }
+        } catch (translationError) {
+          console.error(`Error registering translation shortcut: ${translationError.message}`);
+        }
+      }
+      
+      const success = (grammarHotkey ? grammarSuccess : true) && (translationHotkey ? translationSuccess : true);
+      
+      if (success) {
+        console.log('Successfully updated all shortcuts');
+      } else {
+        console.log('Failed to update some shortcuts');
+      }
+      
+      return {
+        success: success,
+        grammar: {
+          shortcut: grammarHotkey,
+          success: grammarSuccess
+        },
+        translation: {
+          shortcut: translationHotkey,
+          success: translationSuccess
+        }
+      };
+    } catch (error) {
+      console.error('Error updating shortcuts:', error);
+      return {
+        success: false,
+        error: error.message || 'Unknown error'
+      };
     }
   });
 }

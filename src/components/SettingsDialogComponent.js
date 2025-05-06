@@ -1,6 +1,6 @@
 const React = require('react');
 const { Dialog, DialogContent, DialogActions, Button, Box, Typography, IconButton, TextField, FormControl, InputLabel, Select, MenuItem, Paper, List, ListItem, ListItemIcon, ListItemText, Divider } = require('@mui/material');
-const { Close: CloseIcon, Keyboard: KeyboardIcon, Translate: TranslateIcon } = require('@mui/icons-material');
+const { Close: CloseIcon, Keyboard: KeyboardIcon, Translate: TranslateIcon, KeyboardCommandKey: KeyboardCommandKeyIcon } = require('@mui/icons-material');
 const { styled, useTheme } = require('@mui/material/styles');
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
@@ -24,8 +24,10 @@ const SettingsDialogComponent = ({
   onApiKeyChange, 
   availableModels, 
   onModelChange, 
-  isRecordingHotkey, 
-  onRecordHotkeyClick, 
+  isRecordingHotkey,
+  isRecordingTranslationHotkey,
+  onRecordHotkeyClick,
+  onRecordTranslationHotkeyClick, 
   onSave, 
   platform 
 }) => {
@@ -92,8 +94,8 @@ const SettingsDialogComponent = ({
             </Typography>
           </FormControl>
         </Box>
-        {/* <Box>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Shortcut Key</Typography>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Grammar & Style Shortcut</Typography>
           <Button
             variant="outlined"
             onClick={onRecordHotkeyClick}
@@ -108,35 +110,32 @@ const SettingsDialogComponent = ({
               }
             }}
           >
-            {isRecordingHotkey ? 'Recording...' : (settings.hotkey || 'Click to record')}
+            {isRecordingHotkey ? 'Recording...' : (settings.hotkey ? 
+              settings.hotkey.replace('CommandOrControl', platform === 'Mac' ? 'Cmd' : 'Ctrl').replace(/\+/g, ' + ') : 
+              (platform === 'Mac' ? 'Cmd + Shift + C' : 'Ctrl + Shift + C'))}
           </Button>
-        </Box> */}
+        </Box>
 
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Available Hotkeys</Typography>
-          <Paper sx={{ p: 2, backgroundColor: '#F8F9FA', borderRadius: 2 }}>
-            <List dense>
-              <ListItem>
-                <ListItemIcon>
-                  <KeyboardIcon fontSize="small" color="primary" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary={`${platform === 'Mac' ? 'Cmd' : 'Ctrl'}+Shift+C`}
-                  secondary="For grammar & style use"
-                />
-              </ListItem>
-              <Divider sx={{ my: 1 }} />
-              <ListItem>
-                <ListItemIcon>
-                  <TranslateIcon fontSize="small" color="primary" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary={`${platform === 'Mac' ? 'Cmd' : 'Ctrl'}+Shift+T`}
-                  secondary="Translations shortcut"
-                />
-              </ListItem>
-            </List>
-          </Paper>
+        <Box>
+          <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Translation Shortcut</Typography>
+          <Button
+            variant="outlined"
+            onClick={onRecordTranslationHotkeyClick}
+            sx={{
+              textTransform: 'none',
+              borderRadius: 2,
+              borderColor: '#EAEAEA',
+              color: theme.palette.text.primary,
+              '&:hover': {
+                borderColor: theme.palette.primary.main,
+                backgroundColor: '#F8F9FA',
+              }
+            }}
+          >
+            {isRecordingTranslationHotkey ? 'Recording...' : (settings.translationHotkey ? 
+              settings.translationHotkey.replace('CommandOrControl', platform === 'Mac' ? 'Cmd' : 'Ctrl').replace(/\+/g, ' + ') : 
+              (platform === 'Mac' ? 'Cmd + Shift + T' : 'Ctrl + Shift + T'))}
+          </Button>
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 0, mt: 4 }}>

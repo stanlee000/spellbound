@@ -49,11 +49,16 @@ function setCurrentModel(modelId) {
  */
 function loadSettings() {
   const settings = store.get('settings') || {};
-  // Set default hotkey if not set
+  // Set default hotkeys if not set
   if (!settings.hotkey) {
     settings.hotkey = 'CommandOrControl+Shift+C';
     store.set('settings', settings);
   }
+  if (!settings.translationHotkey) {
+    settings.translationHotkey = 'CommandOrControl+Shift+T';
+    store.set('settings', settings);
+  }
+  console.log('Loaded settings:', JSON.stringify(settings));
   return settings;
 }
 
@@ -63,6 +68,7 @@ function loadSettings() {
  */
 function saveSettings(settings) {
   store.set('settings', settings);
+  console.log('Saved settings:', JSON.stringify(settings));
 }
 
 /**

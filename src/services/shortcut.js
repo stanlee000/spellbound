@@ -19,6 +19,9 @@ const LANGUAGE_SHORTCUTS = {
 
 let isLanguageSelectorActive = false;
 
+// Track registered shortcuts
+const registeredShortcuts = [];
+
 /**
  * Register the main hotkey for the app
  * @param {string} hotkey - The hotkey to register
@@ -27,8 +30,16 @@ let isLanguageSelectorActive = false;
  */
 function registerHotkey(hotkey, callback) {
   try {
-    // Unregister any existing shortcuts first
-    globalShortcut.unregisterAll();
+    // Check if hotkey already registered
+    if (registeredShortcuts.includes(hotkey)) {
+      // Unregister just this specific hotkey
+      globalShortcut.unregister(hotkey);
+      // Remove from tracking
+      const index = registeredShortcuts.indexOf(hotkey);
+      if (index > -1) {
+        registeredShortcuts.splice(index, 1);
+      }
+    }
     
     // Register the new shortcut
     const registered = globalShortcut.register(hotkey, () => {
@@ -39,6 +50,9 @@ function registerHotkey(hotkey, callback) {
       console.error(`Failed to register hotkey: ${hotkey}`);
       return false;
     }
+    
+    // Add to tracked shortcuts
+    registeredShortcuts.push(hotkey);
     
     console.log(`Successfully registered hotkey: ${hotkey}`);
     return true;
@@ -55,18 +69,22 @@ function registerHotkey(hotkey, callback) {
  */
 function registerTranslationShortcut(callback) {
   try {
-    // Register the translation shortcut (Cmd+Shift+T)
-    const registered = globalShortcut.register('CommandOrControl+Shift+T', () => {
+    // Get the translation shortcut from settings or use default
+    const settings = settingsService.loadSettings();
+    const translationHotkey = settings.translationHotkey || 'CommandOrControl+Shift+T';
+    
+    // Register the translation shortcut
+    const success = registerHotkey(translationHotkey, () => {
       console.log('Translation shortcut triggered');
       callback();
     });
     
-    if (!registered) {
-      console.error('Failed to register translation shortcut');
+    if (!success) {
+      console.error(`Failed to register translation shortcut: ${translationHotkey}`);
       return false;
     }
     
-    console.log('Translation shortcut registered: CommandOrControl+Shift+T');
+    console.log(`Translation shortcut registered: ${translationHotkey}`);
     return true;
   } catch (error) {
     console.error('Error registering translation shortcut:', error);
@@ -79,6 +97,10 @@ function registerTranslationShortcut(callback) {
  * @param {Object} callbacks - Callbacks for different shortcuts
  */
 function registerShortcuts(callbacks) {
+  // First unregister all shortcuts to start clean
+  globalShortcut.unregisterAll();
+  registeredShortcuts.length = 0;
+
   const settings = settingsService.loadSettings();
   const hotkey = settings.hotkey || 'CommandOrControl+Shift+C';
   
@@ -95,7 +117,14 @@ function registerShortcuts(callbacks) {
 function unregisterLanguageShortcuts() {
   console.log('Unregistering language shortcuts');
   Object.keys(LANGUAGE_SHORTCUTS).forEach(key => {
-    globalShortcut.unregister(`CommandOrControl+${key}`);
+    const shortcut = `CommandOrControl+${key}`;
+    globalShortcut.unregister(shortcut);
+    
+    // Remove from tracked shortcuts
+    const index = registeredShortcuts.indexOf(shortcut);
+    if (index > -1) {
+      registeredShortcuts.splice(index, 1);
+    }
   });
 }
 
