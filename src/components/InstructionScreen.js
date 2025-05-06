@@ -130,10 +130,10 @@ const InstructionScreen = ({ settings, onSettingsClick }) => {
                 backgroundColor: 'rgba(107, 70, 193, 0.05)'
               }}
             >
-              {settings.hotkey || (navigator.platform.includes('Mac') ? 
-                <><KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }}/> + Shift + C</> : 
-                'Ctrl+Shift+C'
-              )}
+              {navigator.platform.includes('Mac') ? 
+                  <><KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }}/> + Shift + C</> : 
+                  'Ctrl+Shift+C'
+              }
             </Box>
           </Typography>
         </Paper>
@@ -177,12 +177,9 @@ const InstructionScreen = ({ settings, onSettingsClick }) => {
                 backgroundColor: 'rgba(107, 70, 193, 0.05)'
               }}
             >
-              {settings.hotkey ? 
-                `${settings.hotkey.replace('CommandOrControl', navigator.platform.includes('Mac') ? 'Cmd' : 'Ctrl').replace('+', ' + ')}` : 
-                (navigator.platform.includes('Mac') ? 
+              {navigator.platform.includes('Mac') ? 
                   <><KeyboardCommandKeyIcon sx={{ fontSize: 18, color: theme.palette.primary.main }}/> + Shift + T</> : 
-                  'Ctrl+Shift+T'
-              )}
+                  'Ctrl+Shift+T'}
             </Box>
           </Typography>
         </Paper>
