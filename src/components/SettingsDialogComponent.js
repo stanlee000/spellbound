@@ -92,7 +92,7 @@ const SettingsDialogComponent = ({
             </Typography>
           </FormControl>
         </Box>
-        <Box>
+        {/* <Box>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Shortcut Key</Typography>
           <Button
             variant="outlined"
@@ -110,7 +110,7 @@ const SettingsDialogComponent = ({
           >
             {isRecordingHotkey ? 'Recording...' : (settings.hotkey || 'Click to record')}
           </Button>
-        </Box>
+        </Box> */}
 
         <Box sx={{ mt: 4 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>Available Hotkeys</Typography>
