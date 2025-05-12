@@ -77,6 +77,10 @@
 
 ## Installation
 
+### From Chrome Web Store
+
+*   [Spellbound's Google Chrome Extension](https://chromewebstore.google.com/detail/spellbound-ai-writing-ass/macnlhnblbpdidolbgehengekhnkeebb)
+
 ### From Local Source (Development)
 
 1.  Download or clone this repository.
@@ -85,10 +89,6 @@
 4.  Click "Load unpacked" and select the `chrome-extension` directory from the cloned repository.
 5.  The Spellbound icon should appear in your extensions toolbar. Pin it for easy access.
 6.  Set up your shortcuts here: `chrome://extensions/shortcuts`
-
-### From Chrome Web Store (Planned)
-
-*   Once published, you will be able to install directly from the Chrome Web Store. (Link TBD)
 
 ## Usage
 
