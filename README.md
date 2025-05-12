@@ -31,7 +31,7 @@ It started as my personal fix, but now I'm excited to share it with anyone who w
   - 🪄 AI prompts builder
   - ✍️ Custom tones  
 - **Cross-Platform:** Runs on Mac, Windows, and Linux. Browser extensions available for:
-  - [Google Chrome extension](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+  - [Google Chrome extension](https://chromewebstore.google.com/detail/spellbound-ai-writing-ass/macnlhnblbpdidolbgehengekhnkeebb)
   - [Safari extension](https://github.com/stanlee000/spellbound/tree/main/safari-extension)
 - **Privacy-First:** Your API key never leaves your device
 - **Custom keyboard shortcuts for your style**
@@ -145,7 +145,7 @@ Having issues? Check out our [Issues](../../issues) page or create a new issue.
 ## 🗺 What's Next?
 - **📱 Mobile App:** Take Spellbound anywhere, anytime!
 - **🌐 Browser Extensions:** 
-  - ✅ Google Chrome extension - [Available now](https://github.com/stanlee000/spellbound/tree/main/chrome-extension)
+  - ✅ Google Chrome extension - [Available now](https://chromewebstore.google.com/detail/spellbound-ai-writing-ass/macnlhnblbpdidolbgehengekhnkeebb)
   - ✅ Safari extension - [Available now](https://github.com/stanlee000/spellbound/tree/main/safari-extension)
   - ⏳ Firefox extension - Coming soon
 - **🔄 Next-level Text Tools:** Select, edit, and enhance in a snap.
